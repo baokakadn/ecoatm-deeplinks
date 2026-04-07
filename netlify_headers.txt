@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Netlify _headers
+# Docs: https://docs.netlify.com/routing/headers/
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Apple App Site Association
+# Must be served as application/json (Apple requirement).
+# Must be publicly accessible without redirect.
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+# ── Android Asset Links
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+# ── All pages: security headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

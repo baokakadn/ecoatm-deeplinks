@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Netlify _redirects
+# Docs: https://docs.netlify.com/routing/redirects/
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Channel entry points → redirect.html (200 = rewrite, not external redirect)
+# All query params (?screen=sell&utm_source=email…) are preserved automatically.
+
+/email      /redirect.html  200
+/sms        /redirect.html  200
+/push       /redirect.html  200
+/social     /redirect.html  200
+/qr         /redirect.html  200
+
+# ── Short-link aliases (for SMS brevity, e.g. https://links.ecoatm.com/s/k9Xp2)
+# These should be managed via Netlify's dashboard or a short-link lookup edge function.
+# Placeholder rule — replace with actual short codes as needed.
+/s/:code    /redirect.html?ref=:code  200
+
+# ── Apple App Site Association — served without extension, with correct content-type
+# (content-type is set in _headers)
+/.well-known/apple-app-site-association  /.well-known/apple-app-site-association  200
+
+# ── Android Asset Links — same treatment
+/.well-known/assetlinks.json  /.well-known/assetlinks.json  200
+
+# ── Catch-all: any unknown path → homepage
+/*  /index.html  200

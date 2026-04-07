@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!--
+    Per-channel OG metadata is injected by Netlify Edge Functions
+    (see netlify/edge-functions/og-meta.js).
+    Defaults below are used as fallback when the channel is unknown.
+  -->
+  <title>Opening ecoATM…</title>
+  <meta name="description" content="Opening the ecoATM app…">
+
+  <!-- Social / channel-specific OG tags — override via edge function -->
+  <meta property="og:title"       content="ecoATM — Sell your phone for instant cash">
+  <meta property="og:description" content="Get a cash offer at your nearest ecoATM kiosk.">
+  <meta property="og:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
+  <meta property="og:url"         content="https://links.ecoatm.com/redirect">
+  <meta property="og:type"        content="website">
+
+  <!-- Prevent search engines from indexing the redirect page -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Immediate meta-refresh fallback (belt-and-suspenders for very old browsers) -->
+  <!-- Overridden by JS in deeplink.js for modern browsers -->
+  <noscript>
+    <meta http-equiv="refresh" content="2;url=https://www.ecoatm.com">
+  </noscript>
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="redirect-page">
+
+    <!-- Logo -->
+    <div class="redirect-page__logo">eco<span>ATM</span></div>
+
+    <!-- Spinner -->
+    <div class="redirect-spinner" aria-hidden="true"></div>
+
+    <!-- Title -->
+    <h1 class="redirect-page__title">Opening ecoATM…</h1>
+
+    <!-- Status message — updated by deeplink.js -->
+    <p class="redirect-page__status" id="redirect-status">Detecting your device…</p>
+
+    <!-- Manual fallback links (shown after a short delay by JS) -->
+    <div class="redirect-page__manual" id="manual-links" style="display:none">
+      <p>Nothing happened? Open the app manually:</p>
+      <p style="margin-top:12px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+        <a href="https://apps.apple.com/us/app/ecoatm/id944835823"
+           id="ios-link" target="_blank" rel="noopener">
+          📱 App Store
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android"
+           id="android-link" target="_blank" rel="noopener">
+          🤖 Google Play
+        </a>
+      </p>
+    </div>
+
+  </div>
+
+  <script src="/js/deeplink.js"></script>
+  <script>
+    // Show manual fallback links after 4 seconds
+    // (in case the automatic redirect silently fails)
+    setTimeout(function () {
+      var el = document.getElementById('manual-links');
+      if (el) el.style.display = 'block';
+    }, 4000);
+  </script>
+
+</body>
+</html>
