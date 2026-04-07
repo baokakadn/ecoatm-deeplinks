@@ -57,37 +57,70 @@ function buildDeepLinkURI(screen, extraParams) {
 function tryOpenApp(uri, storeUrl) {
   updateStatus('Trying to open the ecoATM app…');
 
-  // Use a hidden iframe for Android to avoid "app not found" errors
-  // on some browsers. On iOS, direct location assignment is more reliable.
   const platform = getPlatform();
-  const start = Date.now();
+  const start    = Date.now();
+  let   redirected = false;
 
-  const timer = setTimeout(() => {
-    // If we're still here after the timeout, app is likely not installed
-    if (Date.now() - start < CONFIG.appOpenTimeout + 500) {
-      updateStatus('App not found. Redirecting to store…');
-      window.location.href = storeUrl;
-    }
-  }, CONFIG.appOpenTimeout);
+  function goToStore() {
+    if (redirected) return;
+    redirected = true;
+    updateStatus('App not found. Redirecting to store…');
+    window.location.href = storeUrl;
+  }
 
-  // visibilitychange fires when the app takes over — cancel the store redirect
-  document.addEventListener('visibilitychange', function onVis() {
-    if (document.hidden) {
-      clearTimeout(timer);
-      document.removeEventListener('visibilitychange', onVis);
-    }
-  });
+  const timer = setTimeout(goToStore, CONFIG.appOpenTimeout);
+
+  // visibilitychange: page goes hidden when app opens — cancel store redirect.
+  // Use 'pagehide' as a second signal (more reliable on some Android browsers).
+  function onHide() {
+    clearTimeout(timer);
+    redirected = true; // app opened — do not redirect
+    document.removeEventListener('visibilitychange', onVisChange);
+    window.removeEventListener('pagehide', onHide);
+  }
+  function onVisChange() {
+    if (document.hidden) onHide();
+  }
+  document.addEventListener('visibilitychange', onVisChange);
+  window.addEventListener('pagehide', onHide);
+
+  // Also cancel if user comes back to page (app was opened, then user returned)
+  window.addEventListener('pageshow', function onShow() {
+    clearTimeout(timer);
+    redirected = true;
+    window.removeEventListener('pageshow', onShow);
+  }, { once: true });
 
   if (platform === 'ios') {
+    // iOS: direct assignment is most reliable for Universal Link fallback
     window.location.href = uri;
   } else {
-    // Android: iframe trick avoids "page not found" overlay on failure
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = uri;
-    document.body.appendChild(iframe);
-    setTimeout(() => { try { document.body.removeChild(iframe); } catch(_){} }, 2000);
+    // Android: intent:// scheme is more reliable than custom URI in Chrome
+    // Format: intent://<host>/<path>#Intent;scheme=ecoatm;package=com.ecoatm.ecoapp.android_qa;end
+    const intentUri = buildIntentUri(uri, storeUrl);
+    window.location.href = intentUri;
   }
+}
+
+/**
+ * Builds an Android Intent URI.
+ * Chrome on Android handles this natively — if the app is installed it opens,
+ * if not it follows the S.browser_fallback_url to the store.
+ * This is MORE reliable than the iframe trick and doesn't need a JS timeout
+ * to detect install status on Chrome Android.
+ */
+function buildIntentUri(appUri, storeUrl) {
+  // Extract path from ecoatm://screen/sell?foo=bar
+  const withoutScheme = appUri.replace(CONFIG.appScheme, '');
+  const encodedFallback = encodeURIComponent(storeUrl);
+  return (
+    'intent://' + withoutScheme +
+    '#Intent' +
+    ';scheme=ecoatm' +
+    ';package=com.ecoatm.ecoapp.android_qa' +
+    ';S.browser_fallback_url=' + encodedFallback +
+    ';end'
+  );
 }
 
 /* ─── Main router ─────────────────────────────────────────────────── */
