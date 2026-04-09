@@ -34,7 +34,26 @@ function getParams() {
 }
 
 function getScreen() {
-  return getParams().get('screen') || 'home';
+  // Primary: ?screen= query param
+  const fromQuery = getParams().get('screen');
+  if (fromQuery) return fromQuery;
+
+  // Fallback: infer screen from the URL path itself
+  // e.g. /social → 'sell' default, /find-kiosk → 'find-kiosk'
+  const path = window.location.pathname.replace(/^\//, '').split('/')[0];
+  const pathToScreen = {
+    'email':      'home',
+    'sms':        'sell',
+    'social':     'sell',
+    'qr':         'sell',
+    'push':       'home',
+    'find-kiosk': 'find-kiosk',
+    'sell':       'sell',
+    'offers':     'offers',
+    'account':    'account',
+    'price-view': 'price-view',
+  };
+  return pathToScreen[path] || 'home';
 }
 
 function getWebFallback(screen) {
@@ -218,8 +237,11 @@ function route() {
   const storeUrl = platform === 'ios' ? CONFIG.iosStoreUrl : CONFIG.androidStoreUrl;
 
   if (platform === 'desktop') {
+    const fallback = getWebFallback(screen);
     updateStatus('Opening ecoATM website…');
-    setTimeout(() => { window.location.href = getWebFallback(screen); }, 800);
+    // Use direct assignment with no delay — setTimeout can be swallowed
+    // by some browsers before the page has fully initialised.
+    window.location.replace(fallback);
     return;
   }
 

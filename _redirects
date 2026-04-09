@@ -1,30 +1,33 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Netlify _redirects
+# All rewrites use 200 (rewrite, URL stays clean).
+# :splat captures the full query string automatically on Netlify.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Channel entry points → redirect.html (200 = rewrite, URL stays clean)
-/email      /redirect.html  200
-/sms        /redirect.html  200
-/push       /redirect.html  200
-/social     /redirect.html  200
-/qr         /redirect.html  200
+# ── Channel entry points
+# The  query string is preserved automatically by Netlify on 200 rewrites
+# as long as no explicit query params are added to the target.
+/email    /redirect.html  200
+/sms      /redirect.html  200
+/push     /redirect.html  200
+/social   /redirect.html  200
+/qr       /redirect.html  200
 
-# ── Short-link aliases (SMS brevity)
-/s/:code    /redirect.html?ref=:code  200
+# ── Short-link aliases (SMS)
+/s/:code  /redirect.html?ref=:code  200
 
-# ── Named screen shortcuts — marketers can share these directly
-# Each rewrites to redirect.html and passes the screen param
-/find-kiosk         /redirect.html?screen=find-kiosk  200
-/find-kiosk/:id     /redirect.html?screen=find-kiosk&kiosk_id=:id  200
-/sell               /redirect.html?screen=sell  200
-/sell/this-device   /redirect.html?screen=sell&sub-screen=this-device  200
-/offers             /redirect.html?screen=offers  200
-/offers/:id         /redirect.html?screen=offers&offer_id=:id  200
-/account            /redirect.html?screen=account  200
-/home               /redirect.html?screen=home  200
-/price-view/:id     /redirect.html?screen=price-view&estimate_id=:id  200
+# ── Named screen shortcuts
+/find-kiosk             /redirect.html?screen=find-kiosk  200
+/find-kiosk/:id         /redirect.html?screen=find-kiosk&kiosk_id=:id  200
+/sell                   /redirect.html?screen=sell  200
+/sell/this-device       /redirect.html?screen=sell&sub-screen=this-device  200
+/offers                 /redirect.html?screen=offers  200
+/offers/:id             /redirect.html?screen=offers&offer_id=:id  200
+/account                /redirect.html?screen=account  200
+/home                   /redirect.html?screen=home  200
+/price-view/:id         /redirect.html?screen=price-view&estimate_id=:id  200
 
-# ── Well-known files — must be served as direct 200 (no redirect)
+# ── Well-known files — must be direct 200, never redirected
 /.well-known/apple-app-site-association  /.well-known/apple-app-site-association  200
 /.well-known/assetlinks.json             /.well-known/assetlinks.json              200
 
