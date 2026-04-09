@@ -65,8 +65,61 @@
 
   <script src="/js/deeplink.js"></script>
   <script>
+    // ── Debug overlay — remove before production deploy ──────────────────
+    (function () {
+      var box = document.createElement('div');
+      box.style.cssText = [
+        'position:fixed','bottom:0','left:0','right:0',
+        'background:#111','color:#0f0','font-family:monospace',
+        'font-size:11px','padding:10px','z-index:99999',
+        'max-height:55vh','overflow-y:auto','line-height:1.6'
+      ].join(';');
+      document.body.appendChild(box);
+
+      function log(msg, color) {
+        var line = document.createElement('div');
+        line.style.color = color || '#0f0';
+        line.textContent = msg;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+        console.log(msg);
+      }
+
+      var ua = navigator.userAgent;
+      log('── UA ──────────────────────────────');
+      log(ua.substring(0, 140));
+      log('── Detection ───────────────────────');
+      log('isIOS     : ' + /iPhone|iPad|iPod/i.test(ua));
+      log('isAndroid : ' + /Android/i.test(ua));
+      log('isFB      : ' + /FBAN|FBAV/i.test(ua));
+      log('isIG      : ' + /Instagram/i.test(ua));
+      log('isIAB     : ' + /FBAN|FBAV|Instagram|Twitter|TikTok|BytedanceWebview/i.test(ua));
+      log('── URL ─────────────────────────────');
+      log('path   : ' + window.location.pathname);
+      log('search : ' + window.location.search);
+      log('screen : ' + (new URLSearchParams(window.location.search).get('screen') || '(none)'));
+      log('── JS errors ───────────────────────');
+
+      // Catch any runtime errors from deeplink.js
+      window.addEventListener('error', function (e) {
+        log('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')', '#f55');
+      });
+
+      // Patch updateStatus so we can see every state transition
+      var _orig = window.updateStatus;
+      if (typeof _orig === 'function') {
+        window.updateStatus = function (msg) {
+          log('status → ' + msg, '#ff0');
+          _orig(msg);
+        };
+      } else {
+        log('WARNING: updateStatus not found on window — deeplink.js may not have loaded', '#f90');
+      }
+
+      log('── Route result ────────────────────');
+    }());
+
     // Show manual fallback links after 4 seconds
-    // (in case the automatic redirect silently fails)
     setTimeout(function () {
       var el = document.getElementById('manual-links');
       if (el) el.style.display = 'block';
