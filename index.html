@@ -6,9 +6,9 @@
   <title>ecoATM — Sell Your Phone for Instant Cash</title>
   <meta name="description" content="Get an instant cash offer for your old phone or tablet at your nearest ecoATM kiosk. Fast, easy, and secure.">
 
-  <!-- Open Graph (Social previews) -->
+  <!-- Open Graph -->
   <meta property="og:title"       content="ecoATM — Sell Your Phone for Instant Cash">
-  <meta property="og:description" content="Get an instant cash offer for your old phone or tablet at your nearest ecoATM kiosk. Fast, easy, and secure.">
+  <meta property="og:description" content="Get an instant cash offer for your old phone or tablet at your nearest ecoATM kiosk.">
   <meta property="og:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
   <meta property="og:url"         content="https://links.ecoatm.com/">
   <meta property="og:type"        content="website">
@@ -17,10 +17,10 @@
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="ecoATM — Sell Your Phone for Instant Cash">
-  <meta name="twitter:description" content="Get an instant cash offer for your old phone at your nearest ecoATM kiosk.">
+  <meta name="twitter:description" content="Get an instant cash offer at your nearest ecoATM kiosk.">
   <meta name="twitter:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
 
-  <!-- iOS App Smart Banner (optional — shows "Open in App" in Safari) -->
+  <!-- iOS Smart Banner -->
   <meta name="apple-itunes-app" content="app-id=944835823">
 
   <link rel="stylesheet" href="/css/style.css">
@@ -51,9 +51,11 @@
       <p class="hero__sub">Get a real offer in minutes at your nearest ecoATM kiosk. No haggling, no waiting, no hassle.</p>
       <div class="hero__ctas">
         <a href="/redirect?screen=sell&utm_source=web&utm_medium=hero_cta&utm_campaign=homepage" class="btn btn--primary">
-          Get my offer →
+          Price my device →
         </a>
-        <a href="#how-it-works" class="btn btn--outline">See how it works</a>
+        <a href="/redirect?screen=find-kiosk&utm_source=web&utm_medium=hero_cta&utm_campaign=homepage" class="btn btn--outline">
+          Find a kiosk
+        </a>
       </div>
 
       <!-- App store badges -->
@@ -100,50 +102,50 @@
     </div>
   </section>
 
-  <!-- ── Deep link channels ── -->
-  <section class="section" id="channels">
+  <!-- ── Deep link targets ── -->
+  <section class="section section--alt" id="channels">
     <div class="container">
       <div class="text-center">
-        <p class="section__eyebrow">Reach us anywhere</p>
-        <h2 class="section__title">Links that work everywhere</h2>
-        <p class="section__sub">Whether you tapped an email, scanned a QR code, or found us on social — our smart links open the app directly.</p>
+        <p class="section__eyebrow">Deep link targets</p>
+        <h2 class="section__title">Every screen, one tap away</h2>
+        <p class="section__sub">Marketing links open directly to the right place in the app — no home screen detours.</p>
       </div>
       <div class="channels-grid">
 
-        <div class="ch-card">
-          <div class="ch-card__icon">📧</div>
-          <h3 class="ch-card__title">Email</h3>
-          <p class="ch-card__desc">Universal HTTPS links that work in Gmail, Apple Mail, and Outlook. No custom URI schemes needed.</p>
-          <span class="ch-card__badge">ESP compatible</span>
-        </div>
+        <a href="/redirect?screen=sell&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
+          <div class="ch-card__icon">💰</div>
+          <h3 class="ch-card__title">Price your device</h3>
+          <p class="ch-card__desc">Multi-step estimator: brand → model → storage → carrier → condition → instant offer.</p>
+          <span class="ch-card__badge">/sell</span>
+        </a>
 
-        <div class="ch-card">
-          <div class="ch-card__icon">💬</div>
-          <h3 class="ch-card__title">SMS</h3>
-          <p class="ch-card__desc">Short branded links that stay within character limits and survive carrier link scanning.</p>
-          <span class="ch-card__badge">160-char safe</span>
-        </div>
-
-        <div class="ch-card">
-          <div class="ch-card__icon">🔔</div>
-          <h3 class="ch-card__title">Push notifications</h3>
-          <p class="ch-card__desc">Deep link URI delivered directly in the push payload. Routes to the exact screen on notification tap.</p>
-          <span class="ch-card__badge">Instant routing</span>
-        </div>
-
-        <div class="ch-card">
+        <a href="/redirect?screen=sell&sub-screen=this-device&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
           <div class="ch-card__icon">📱</div>
-          <h3 class="ch-card__title">Social media</h3>
-          <p class="ch-card__desc">Works in native browsers and in-app browsers (Instagram, Facebook, TikTok) via JavaScript fallback.</p>
-          <span class="ch-card__badge">IAB-safe</span>
-        </div>
+          <h3 class="ch-card__title">Sell this phone</h3>
+          <p class="ch-card__desc">Auto-detects the current device and pre-fills brand, model, and storage in the estimator.</p>
+          <span class="ch-card__badge">/sell/this-device</span>
+        </a>
 
-        <div class="ch-card">
-          <div class="ch-card__icon">⬛</div>
-          <h3 class="ch-card__title">QR codes</h3>
-          <p class="ch-card__desc">Scan in-store or from print ads. Same smart redirect logic — works on any mobile camera.</p>
-          <span class="ch-card__badge">Print-ready</span>
-        </div>
+        <a href="/redirect?screen=find-kiosk&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
+          <div class="ch-card__icon">📍</div>
+          <h3 class="ch-card__title">Find a kiosk</h3>
+          <p class="ch-card__desc">Nearby kiosk list and map view with directions. Searchable by city, state, or zip code.</p>
+          <span class="ch-card__badge">/find-kiosk</span>
+        </a>
+
+        <a href="/redirect?screen=offers&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
+          <div class="ch-card__icon">🔒</div>
+          <h3 class="ch-card__title">Drop-off codes</h3>
+          <p class="ch-card__desc">Dashboard of active, expired, and sold drop-off codes. Links to specific codes via offer_id.</p>
+          <span class="ch-card__badge">/offers</span>
+        </a>
+
+        <a href="/redirect?screen=account&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
+          <div class="ch-card__icon">👤</div>
+          <h3 class="ch-card__title">My account</h3>
+          <p class="ch-card__desc">Account details, notification preferences, support, and legal. Requires sign-in.</p>
+          <span class="ch-card__badge">/account</span>
+        </a>
 
       </div>
     </div>

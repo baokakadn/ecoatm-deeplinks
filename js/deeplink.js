@@ -37,13 +37,25 @@ function getScreen() {
   return getParams().get('screen') || 'home';
 }
 
+function getWebFallback(screen) {
+  return CONFIG.webFallbackMap[screen] || CONFIG.webFallbackDefault;
+}
+
 function buildDeepLinkURI(screen, extraParams) {
-  // e.g. ecoatm://screen/sell?offerId=123
-  let uri = CONFIG.appScheme + 'screen/' + encodeURIComponent(screen);
-  const p = new URLSearchParams(extraParams || {});
-  const str = p.toString();
-  if (str) uri += '?' + str;
-  return uri;
+  let path = 'screen/' + encodeURIComponent(screen);
+  // Append sub-path for known parameterised screens
+  const offerId    = extraParams.offer_id;
+  const kioskId    = extraParams.kiosk_id;
+  const estimateId = extraParams.estimate_id;
+  if (screen === 'offers'      && offerId)    path += '/' + encodeURIComponent(offerId);
+  if (screen === 'find-kiosk'  && kioskId)    path += '/' + encodeURIComponent(kioskId);
+  if (screen === 'price-view'  && estimateId) path += '/' + encodeURIComponent(estimateId);
+  if (screen === 'sell' && extraParams['sub-screen'] === 'this-device') path += '/this-device';
+  const p = new URLSearchParams();
+  ['brand','model','utm_source','utm_medium','utm_campaign','utm_content']
+    .forEach(k => { if (extraParams[k]) p.set(k, extraParams[k]); });
+  const qs = p.toString();
+  return CONFIG.appScheme + path + (qs ? '?' + qs : '');
 }
 
 /* ─── App open attempt ────────────────────────────────────────────── */
@@ -106,18 +118,15 @@ function tryOpenApp(uri, storeUrl) {
  * Builds an Android Intent URI.
  * Chrome on Android handles this natively — if the app is installed it opens,
  * if not it follows the S.browser_fallback_url to the store.
- * This is MORE reliable than the iframe trick and doesn't need a JS timeout
- * to detect install status on Chrome Android.
  */
 function buildIntentUri(appUri, storeUrl) {
-  // Extract path from ecoatm://screen/sell?foo=bar
   const withoutScheme = appUri.replace(CONFIG.appScheme, '');
   const encodedFallback = encodeURIComponent(storeUrl);
   return (
     'intent://' + withoutScheme +
     '#Intent' +
     ';scheme=ecoatm' +
-    ';package=com.ecoatm.ecoapp.android_qa' +
+    ';package=' + CONFIG.androidPkg +
     ';S.browser_fallback_url=' + encodedFallback +
     ';end'
   );
@@ -131,8 +140,11 @@ function route() {
   const screen   = getScreen();
   const inIAB    = isInAppBrowser();
 
-  // Collect any extra params to forward (e.g. offerId, promo)
-  const forwardKeys = ['offerId', 'promo', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
+  // Collect params to forward
+  const forwardKeys = [
+    'offer_id','kiosk_id','estimate_id','brand','model','sub-screen',
+    'utm_source','utm_medium','utm_campaign','utm_content'
+  ];
   const extra = {};
   forwardKeys.forEach(k => { if (params.get(k)) extra[k] = params.get(k); });
 
@@ -141,27 +153,21 @@ function route() {
 
   if (platform === 'desktop') {
     updateStatus('Opening ecoATM website…');
-    setTimeout(() => { window.location.href = CONFIG.webFallbackUrl; }, 800);
+    setTimeout(() => { window.location.href = getWebFallback(screen); }, 800);
     return;
   }
 
-  // In-app browsers (Instagram, Facebook, TikTok) block Universal Links.
-  // We fall back directly to the URI scheme + store timeout.
   if (inIAB) {
     updateStatus('Opening ecoATM app…');
     tryOpenApp(appUri, storeUrl);
     return;
   }
 
-  // Native browser on iOS: Universal Links are handled by the OS
-  // before this JS even runs — if we reach here, the AASA check failed
-  // or the app isn't installed. Attempt URI scheme as last resort.
   if (platform === 'ios') {
     tryOpenApp(appUri, storeUrl);
     return;
   }
 
-  // Native browser on Android: App Links handled by OS. Same fallback.
   tryOpenApp(appUri, storeUrl);
 }
 
