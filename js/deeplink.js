@@ -70,7 +70,6 @@ function tryOpenApp(uri, storeUrl) {
   updateStatus('Trying to open the ecoATM app…');
 
   const platform = getPlatform();
-  const start    = Date.now();
   let   redirected = false;
 
   function goToStore() {
@@ -82,21 +81,15 @@ function tryOpenApp(uri, storeUrl) {
 
   const timer = setTimeout(goToStore, CONFIG.appOpenTimeout);
 
-  // visibilitychange: page goes hidden when app opens — cancel store redirect.
-  // Use 'pagehide' as a second signal (more reliable on some Android browsers).
   function onHide() {
     clearTimeout(timer);
-    redirected = true; // app opened — do not redirect
+    redirected = true;
     document.removeEventListener('visibilitychange', onVisChange);
     window.removeEventListener('pagehide', onHide);
   }
-  function onVisChange() {
-    if (document.hidden) onHide();
-  }
+  function onVisChange() { if (document.hidden) onHide(); }
   document.addEventListener('visibilitychange', onVisChange);
   window.addEventListener('pagehide', onHide);
-
-  // Also cancel if user comes back to page (app was opened, then user returned)
   window.addEventListener('pageshow', function onShow() {
     clearTimeout(timer);
     redirected = true;
@@ -104,14 +97,71 @@ function tryOpenApp(uri, storeUrl) {
   }, { once: true });
 
   if (platform === 'ios') {
-    // iOS: direct assignment is most reliable for Universal Link fallback
     window.location.href = uri;
   } else {
-    // Android: intent:// scheme is more reliable than custom URI in Chrome
-    // Format: intent://<host>/<path>#Intent;scheme=ecoatm;package=com.ecoatm.ecoapp.android_qa;end
-    const intentUri = buildIntentUri(uri, storeUrl);
-    window.location.href = intentUri;
+    // Native Chrome on Android — Intent URI is most reliable
+    window.location.href = buildIntentUri(uri, storeUrl);
   }
+}
+
+/**
+ * Direct custom scheme attempt — used inside Facebook/Instagram IAB on Android
+ * where intent:// is not supported.
+ * Falls back to store after CONFIG.appOpenTimeout if app does not respond.
+ */
+function tryOpenAppDirectScheme(uri, storeUrl) {
+  let redirected = false;
+
+  const timer = setTimeout(() => {
+    if (redirected) return;
+    redirected = true;
+    updateStatus('App not found. Redirecting to store…');
+    window.location.href = storeUrl;
+  }, CONFIG.appOpenTimeout);
+
+  function onHide() {
+    clearTimeout(timer);
+    redirected = true;
+    document.removeEventListener('visibilitychange', onVisChange);
+  }
+  function onVisChange() { if (document.hidden) onHide(); }
+  document.addEventListener('visibilitychange', onVisChange);
+
+  // Direct scheme — no intent:// wrapper
+  window.location.href = uri; // e.g. ecoatm://screen/sell
+}
+
+/**
+ * Shows a manual fallback prompt inside Facebook's IAB.
+ * Facebook sometimes blocks even direct URI scheme attempts.
+ * The prompt gives the user a way to open the link in their real browser
+ * where Universal Links / App Links will fire correctly.
+ */
+function showOpenInBrowserPrompt() {
+  setTimeout(() => {
+    const existing = document.getElementById('open-in-browser-banner');
+    if (existing) return;
+    const banner = document.createElement('div');
+    banner.id = 'open-in-browser-banner';
+    banner.style.cssText = [
+      'position:fixed', 'bottom:0', 'left:0', 'right:0',
+      'background:#fff', 'border-top:1px solid #e0e0e0',
+      'padding:16px 20px', 'display:flex', 'align-items:center',
+      'gap:12px', 'z-index:9999', 'font-family:sans-serif',
+      'box-shadow:0 -2px 12px rgba(0,0,0,0.12)'
+    ].join(';');
+    banner.innerHTML = `
+      <div style="flex:1;font-size:14px;color:#1a1a1a;line-height:1.4">
+        <strong>Open in your browser</strong> for the best experience —
+        tap <strong>⋮</strong> or <strong>···</strong> then
+        <em>"Open in Chrome"</em> or <em>"Open in Safari"</em>.
+      </div>
+      <button onclick="this.parentNode.remove()"
+        style="border:none;background:none;font-size:20px;cursor:pointer;color:#888;padding:4px">
+        ✕
+      </button>`;
+    document.body.appendChild(banner);
+  }, 1800); // only show if app hasn't opened after 1.8s
 }
 
 /**
