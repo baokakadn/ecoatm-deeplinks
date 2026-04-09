@@ -105,42 +105,47 @@ function tryOpenApp(uri, storeUrl) {
 }
 
 /**
- * Direct custom scheme attempt — used inside Facebook/Instagram IAB on Android
- * where intent:// is not supported.
- * Falls back to store after CONFIG.appOpenTimeout if app does not respond.
+ * Direct custom scheme attempt — used inside Instagram IAB and other
+ * non-Chrome Android WebViews.
+ * @param {string}      uri      - ecoatm:// URI to attempt
+ * @param {string|null} storeUrl - if null, no store fallback fires (Facebook path)
  */
 function tryOpenAppDirectScheme(uri, storeUrl) {
   let redirected = false;
 
-  const timer = setTimeout(() => {
+  // Only set up store fallback if a storeUrl was provided
+  const timer = storeUrl ? setTimeout(() => {
     if (redirected) return;
     redirected = true;
     updateStatus('App not found. Redirecting to store…');
     window.location.href = storeUrl;
-  }, CONFIG.appOpenTimeout);
+  }, CONFIG.appOpenTimeout) : null;
 
   function onHide() {
-    clearTimeout(timer);
+    if (timer) clearTimeout(timer);
     redirected = true;
     document.removeEventListener('visibilitychange', onVisChange);
   }
   function onVisChange() { if (document.hidden) onHide(); }
   document.addEventListener('visibilitychange', onVisChange);
 
-  // Direct scheme — no intent:// wrapper
-  window.location.href = uri; // e.g. ecoatm://screen/sell
+  window.location.href = uri;
 }
 
 /**
- * Shows a manual fallback prompt inside Facebook's IAB.
- * Facebook sometimes blocks even direct URI scheme attempts.
- * The prompt gives the user a way to open the link in their real browser
- * where Universal Links / App Links will fire correctly.
+ * Shows a prompt to open the link in the real browser.
+ * @param {boolean} immediate - if true, show right away (Facebook WebView).
+ *                              if false, show only if app hasn't opened after 1.8s.
  */
-function showOpenInBrowserPrompt() {
-  setTimeout(() => {
+function showOpenInBrowserPrompt(immediate) {
+  function render() {
     const existing = document.getElementById('open-in-browser-banner');
     if (existing) return;
+    // Don't show if app already opened (page went hidden)
+    if (document.hidden) return;
+
+    const currentUrl = window.location.href;
+
     const banner = document.createElement('div');
     banner.id = 'open-in-browser-banner';
     banner.style.cssText = [
@@ -151,17 +156,28 @@ function showOpenInBrowserPrompt() {
       'box-shadow:0 -2px 12px rgba(0,0,0,0.12)'
     ].join(';');
     banner.innerHTML = `
-      <div style="flex:1;font-size:14px;color:#1a1a1a;line-height:1.4">
-        <strong>Open in your browser</strong> for the best experience —
-        tap <strong>⋮</strong> or <strong>···</strong> then
-        <em>"Open in Chrome"</em> or <em>"Open in Safari"</em>.
+      <div style="flex:1;font-size:14px;color:#1a1a1a;line-height:1.5">
+        <strong style="display:block;margin-bottom:4px">
+          Open in your browser to launch the ecoATM app
+        </strong>
+        Tap <strong>⋮</strong> at the top right, then choose
+        <em>"Open in Chrome"</em> or <em>"Open in system browser"</em>.
       </div>
       <button onclick="this.parentNode.remove()"
-        style="border:none;background:none;font-size:20px;cursor:pointer;color:#888;padding:4px">
+        style="border:none;background:none;font-size:22px;
+               cursor:pointer;color:#888;padding:4px;flex-shrink:0">
         ✕
       </button>`;
     document.body.appendChild(banner);
-  }, 1800); // only show if app hasn't opened after 1.8s
+  }
+
+  if (immediate) {
+    // Small defer so the page has painted before the banner appears
+    setTimeout(render, 400);
+  } else {
+    // Show only if app hasn't opened after 1.8s
+    setTimeout(render, 1800);
+  }
 }
 
 /**
