@@ -182,40 +182,50 @@
   }
 
   /**
-   * Direct scheme open via hidden iframe — used for Android IABs where
-   * intent:// is not supported (Facebook, TikTok, Twitter, etc.).
-   * Using an iframe instead of window.location.href prevents the WebView
-   * from freezing the JS event loop on a blocked scheme, so the store
-   * timeout fires reliably.
+   * Escape Facebook's WebView by navigating to an intent:// URI that
+   * explicitly targets the Android browser package. This forces Facebook
+   * to hand the URL off to Chrome/the system browser, where App Links
+   * and custom URI schemes work normally.
+   *
+   * If the intent escape fails (older Android / no browser installed),
+   * falls back to the Play Store after a short delay.
    */
-  function openAppDirectScheme(appUri, storeUrl) {
+  function escapeFacebookWebView(appUri, storeUrl) {
     var done = false;
 
-    var timer = storeUrl
-      ? setTimeout(function () {
-          if (done) return;
-          done = true;
-          hideModal();
-          window.location.href = storeUrl;
-        }, CONFIG.timeout)
-      : null;
+    /* Safety net — if the intent escape doesn't work, go to store */
+    var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      hideModal();
+      window.location.href = storeUrl;
+    }, CONFIG.timeout);
 
     onAppOpened(function () {
       if (done) return;
       done = true;
-      if (timer) clearTimeout(timer);
+      clearTimeout(timer);
       hideModal();
     });
 
-    /* Attempt scheme via hidden iframe — failure is silently swallowed,
-       JS execution continues and the timeout fires normally. */
-    var iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = appUri;
-    document.body.appendChild(iframe);
-    setTimeout(function () {
-      if (document.body.contains(iframe)) document.body.removeChild(iframe);
-    }, 2000);
+    /*
+     * Build an intent:// URI that opens the deep link URL in the
+     * system browser (Chrome / default browser), not in a specific app.
+     * The browser will then trigger App Links / Universal Links normally.
+     *
+     * Encode the full HTTPS deep link URL as the intent data so the
+     * browser re-opens the same redirect page outside the Facebook IAB.
+     */
+    var currentUrl = window.location.href;
+    var intentUri  = 'intent://' + currentUrl.replace(/^https?:\/\//, '')
+      + '#Intent'
+      + ';scheme=https'
+      + ';action=android.intent.action.VIEW'
+      + ';category=android.intent.category.BROWSABLE'
+      + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
+      + ';end';
+
+    window.location.href = intentUri;
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
