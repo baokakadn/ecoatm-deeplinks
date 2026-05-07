@@ -182,23 +182,40 @@
   }
 
   /**
-   * Direct scheme open — used when intent:// is not supported (most non-Chrome Android IABs).
-   * Pass null for storeUrl to disable the store fallback (Facebook path).
+   * Direct scheme open via hidden iframe — used for Android IABs where
+   * intent:// is not supported (Facebook, TikTok, Twitter, etc.).
+   * Using an iframe instead of window.location.href prevents the WebView
+   * from freezing the JS event loop on a blocked scheme, so the store
+   * timeout fires reliably.
    */
   function openAppDirectScheme(appUri, storeUrl) {
     var done = false;
 
-    if (storeUrl) {
-      var timer = setTimeout(function () {
-        if (!done) { done = true; hideModal(); window.location.href = storeUrl; }
-      }, CONFIG.timeout);
+    var timer = storeUrl
+      ? setTimeout(function () {
+          if (done) return;
+          done = true;
+          hideModal();
+          window.location.href = storeUrl;
+        }, CONFIG.timeout)
+      : null;
 
-      onAppOpened(function () {
-        if (!done) { done = true; clearTimeout(timer); hideModal(); }
-      });
-    }
+    onAppOpened(function () {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      hideModal();
+    });
 
-    window.location.href = appUri;
+    /* Attempt scheme via hidden iframe — failure is silently swallowed,
+       JS execution continues and the timeout fires normally. */
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = appUri;
+    document.body.appendChild(iframe);
+    setTimeout(function () {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    }, 2000);
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
