@@ -3,128 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!--
-    Per-channel OG metadata is injected by Netlify Edge Functions
-    (see netlify/edge-functions/og-meta.js).
-    Defaults below are used as fallback when the channel is unknown.
-  -->
   <title>Opening ecoATM…</title>
-  <meta name="description" content="Opening the ecoATM app…">
+  <meta name="robots" content="noindex, nofollow">
 
-  <!-- Social / channel-specific OG tags — override via edge function -->
-  <meta property="og:title"       content="ecoATM — Sell your phone for instant cash">
-  <meta property="og:description" content="Get a cash offer at your nearest ecoATM kiosk.">
+  <!-- Social OG tags — shown when link is shared -->
+  <meta property="og:title"       content="ecoATM — Sell Your Phone for Instant Cash">
+  <meta property="og:description" content="Get an instant cash offer at your nearest ecoATM kiosk.">
   <meta property="og:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
   <meta property="og:url"         content="https://links.ecoatm.com/redirect">
   <meta property="og:type"        content="website">
 
-  <!-- Prevent search engines from indexing the redirect page -->
-  <meta name="robots" content="noindex, nofollow">
-
-  <!-- Immediate meta-refresh fallback (belt-and-suspenders for very old browsers) -->
-  <!-- Overridden by JS in deeplink.js for modern browsers -->
-  <noscript>
-    <meta http-equiv="refresh" content="2;url=https://www.ecoatm.com">
-  </noscript>
-
-  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; }
+    @keyframes eco-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
 
-  <div class="redirect-page">
+  <!-- Loading modal -->
+  <div id="loading-modal" role="dialog" aria-modal="true" aria-label="Opening ecoATM" style="
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:9999;
+  ">
+    <div style="
+      background:#fff;
+      border-radius:16px;
+      padding:40px 48px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:20px;
+      min-width:260px;
+      text-align:center;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      <img
+        src="https://www.ecoatm.com/cdn/shop/files/ecoATM_logo_sea_RGB.png?v=1723069663&width=200"
+        alt="ecoATM"
+        style="height:20px;width:auto;">
 
-    <!-- Logo -->
-    <div class="redirect-page__logo">eco<span>ATM</span></div>
+      <div style="
+        width:40px; height:40px;
+        border:3px solid #E1F5EE;
+        border-top-color:#00A651;
+        border-radius:50%;
+        animation:eco-spin .8s linear infinite;
+      "></div>
 
-    <!-- Spinner -->
-    <div class="redirect-spinner" aria-hidden="true"></div>
-
-    <!-- Title -->
-    <h1 class="redirect-page__title">Opening ecoATM…</h1>
-
-    <!-- Status element hidden — no visible messaging in production -->
-    <p class="redirect-page__status" id="redirect-status" style="display:none"></p>
-
-    <!-- Manual fallback links (shown after a short delay by JS) -->
-    <div class="redirect-page__manual" id="manual-links" style="display:none">
-      <p>Nothing happened? Open the app manually:</p>
-      <p style="margin-top:12px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-        <a href="https://apps.apple.com/us/app/ecoatm/id944835823"
-           id="ios-link" target="_blank" rel="noopener">
-          📱 App Store
-        </a>
-        <a href="https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android"
-           id="android-link" target="_blank" rel="noopener">
-          🤖 Google Play
-        </a>
+      <p style="margin:0;font-size:15px;color:#5c5c5c;line-height:1.5;">
+        Opening the ecoATM app&hellip;
       </p>
     </div>
-
   </div>
 
   <script src="/js/deeplink.js"></script>
-  <script>
-    // ── Debug overlay — remove before production deploy ──────────────────
-    (function () {
-      var box = document.createElement('div');
-      box.style.cssText = [
-        'position:fixed','bottom:0','left:0','right:0',
-        'background:#111','color:#0f0','font-family:monospace',
-        'font-size:11px','padding:10px','z-index:99999',
-        'max-height:55vh','overflow-y:auto','line-height:1.6'
-      ].join(';');
-      document.body.appendChild(box);
-
-      function log(msg, color) {
-        var line = document.createElement('div');
-        line.style.color = color || '#0f0';
-        line.textContent = msg;
-        box.appendChild(line);
-        box.scrollTop = box.scrollHeight;
-        console.log(msg);
-      }
-
-      var ua = navigator.userAgent;
-      log('── UA ──────────────────────────────');
-      log(ua.substring(0, 140));
-      log('── Detection ───────────────────────');
-      log('isIOS     : ' + /iPhone|iPad|iPod/i.test(ua));
-      log('isAndroid : ' + /Android/i.test(ua));
-      log('isFB      : ' + /FBAN|FBAV/i.test(ua));
-      log('isIG      : ' + /Instagram/i.test(ua));
-      log('isIAB     : ' + /FBAN|FBAV|Instagram|Twitter|TikTok|BytedanceWebview/i.test(ua));
-      log('── URL ─────────────────────────────');
-      log('path   : ' + window.location.pathname);
-      log('search : ' + window.location.search);
-      log('screen : ' + (new URLSearchParams(window.location.search).get('screen') || '(none)'));
-      log('── JS errors ───────────────────────');
-
-      // Catch any runtime errors from deeplink.js
-      window.addEventListener('error', function (e) {
-        log('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')', '#f55');
-      });
-
-      // Patch updateStatus so we can see every state transition
-      var _orig = window.updateStatus;
-      if (typeof _orig === 'function') {
-        window.updateStatus = function (msg) {
-          log('status → ' + msg, '#ff0');
-          _orig(msg);
-        };
-      } else {
-        log('WARNING: updateStatus not found on window — deeplink.js may not have loaded', '#f90');
-      }
-
-      log('── Route result ────────────────────');
-    }());
-
-    // Show manual fallback links after 4 seconds
-    setTimeout(function () {
-      var el = document.getElementById('manual-links');
-      if (el) el.style.display = 'block';
-    }, 4000);
-  </script>
 
 </body>
 </html>
