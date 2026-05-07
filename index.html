@@ -3,163 +3,719 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ecoATM — Sell Your Phone for Instant Cash</title>
-  <meta name="description" content="Get an instant cash offer for your old phone or tablet at your nearest ecoATM kiosk. Fast, easy, and secure.">
+  <title>Mobile App – ecoATM</title>
+  <meta name="description" content="Price your device on the go with the ecoATM mobile app for on iOS &amp; Android. See what your device is worth instantly &amp; save time at the kiosk by downloading!">
 
   <!-- Open Graph -->
-  <meta property="og:title"       content="ecoATM — Sell Your Phone for Instant Cash">
-  <meta property="og:description" content="Get an instant cash offer for your old phone or tablet at your nearest ecoATM kiosk.">
-  <meta property="og:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
-  <meta property="og:url"         content="https://links.ecoatm.com/">
-  <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="ecoATM">
+  <meta property="og:url"         content="https://links.ecoatm.com/">
+  <meta property="og:title"       content="ecoATM Mobile App - ecoATM">
+  <meta property="og:type"        content="website">
+  <meta property="og:description" content="Price your device on the go with the ecoATM mobile app for on iOS &amp; Android. See what your device is worth instantly &amp; save time at the kiosk by downloading!">
+  <meta property="og:image"       content="https://www.ecoatm.com/cdn/shop/files/ecoATM_logo_sea_RGB.png?height=628&pad_color=ffffff&v=1723069663&width=1200">
 
   <!-- Twitter Card -->
+  <meta name="twitter:site"        content="@ecoATM">
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="ecoATM — Sell Your Phone for Instant Cash">
-  <meta name="twitter:description" content="Get an instant cash offer at your nearest ecoATM kiosk.">
-  <meta name="twitter:image"       content="https://links.ecoatm.com/assets/og-default.jpg">
+  <meta name="twitter:title"       content="ecoATM Mobile App - ecoATM">
+  <meta name="twitter:description" content="Price your device on the go with the ecoATM mobile app for on iOS &amp; Android. See what your device is worth instantly &amp; save time at the kiosk by downloading!">
 
   <!-- iOS Smart Banner -->
   <meta name="apple-itunes-app" content="app-id=944835823">
 
+  <link rel="icon" type="image/png" href="https://www.ecoatm.com/cdn/shop/files/ecoatm_logo.png?crop=center&height=32&v=1767913565&width=32">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+  <style>
+    @font-face {
+      font-family: 'Founders Grotesk';
+      src: url("https://cdn.shopify.com/s/files/1/0162/3841/1830/files/FoundersGrotesk-Regular.woff2?v=1727992084") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Founders Grotesk';
+      src: url("https://cdn.shopify.com/s/files/1/0162/3841/1830/files/FoundersGrotesk-Medium.woff2?v=1727992084") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Caslon Ionic';
+      src: url("https://cdn.shopify.com/s/files/1/0162/3841/1830/files/CaslonIonic-Regular_1758564233121.woff2?v=1758564237") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" href="/favicon.ico">
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: 'Founders Grotesk', sans-serif;
+      font-weight: 400;
+      color: #1a1a1a;
+      background: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; border: 0; vertical-align: middle; }
+    a { text-decoration: none; }
+
+    /* ── Header ── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #fff;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .header-inner {
+      max-width: 1344px;
+      margin: 0 auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .header-logo img { height: 20px; width: auto; }
+    .header-nav { display: flex; gap: 32px; }
+    .header-nav a {
+      font-size: 15px;
+      color: #1a1a1a;
+      font-weight: 400;
+      letter-spacing: .03em;
+    }
+    .header-nav a:hover { text-decoration: underline; }
+    .header-cta {
+      background: #407874;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 22px;
+      border-radius: 100px;
+      letter-spacing: .2px;
+      transition: background .15s;
+    }
+    .header-cta:hover { background: #2e5855; }
+
+    /* ── Announcement bar ── */
+    .announce-bar {
+      background: #313131;
+      color: #efece4;
+      font-size: 13px;
+      text-align: center;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .announce-bar a { color: #efece4; text-decoration: underline; }
+
+    /* ══════════════════════════════════════════
+       HERO SECTION
+    ══════════════════════════════════════════ */
+    .eco-hero {
+      background-color: #D6FDDB;
+      padding: 64px 48px 80px;
+      display: flex;
+      justify-content: center;
+    }
+    .eco-hero-inner {
+      max-width: 1344px;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 80px;
+    }
+    .eco-hero-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 32px;
+    }
+    .eco-hero-right {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .eco-hero-headline {
+      font-family: 'Founders Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 64px;
+      line-height: 1.1;
+      color: #1B1B1A;
+      text-align: right;
+    }
+    .eco-hero-subtext {
+      font-family: 'Founders Grotesk', sans-serif;
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 1.4;
+      color: #1C1B1C;
+      text-align: right;
+    }
+    .eco-badges {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      align-items: center;
+    }
+    .eco-badge-link {
+      display: block;
+      line-height: 0;
+      border-radius: 8px;
+      transition: opacity .2s, transform .2s;
+    }
+    .eco-badge-link:hover { opacity: .82; transform: translateY(-1px); }
+    .eco-hero-img {
+      max-height: 600px;
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 16px;
+    }
+
+    /* ══════════════════════════════════════════
+       HOW IT WORKS SECTION
+    ══════════════════════════════════════════ */
+    .eco-hiw {
+      background-color: #fff;
+      padding: 80px 48px;
+      display: flex;
+      justify-content: center;
+    }
+    .eco-hiw-inner {
+      max-width: 1344px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 64px;
+    }
+    .eco-hiw-headline {
+      font-family: 'Founders Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 64px;
+      line-height: 1.1;
+      color: #102E33;
+      text-align: center;
+    }
+    .eco-hiw-grid {
+      display: grid;
+      grid-template-columns: 300px max-content;
+      column-gap: 64px;
+      row-gap: 8px;
+      align-items: start;
+      width: fit-content;
+      margin: 0 auto;
+    }
+    .eco-feature {
+      grid-column: 2;
+      background: transparent;
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      cursor: default;
+      transition: background 150ms ease-in-out;
+      max-width: 600px;
+    }
+    .eco-feature.eco-selected { background: #F7F5F1; }
+    .eco-feature:hover { background: #EFECE4; }
+    .eco-icon-wrap {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .eco-feature-text { display: flex; flex-direction: column; gap: 8px; }
+    .eco-feature-title {
+      font-family: 'Caslon Ionic', Georgia, serif;
+      font-weight: 400;
+      font-size: 26px;
+      line-height: 1.1;
+      color: #407874;
+    }
+    .eco-feature-body {
+      font-family: 'Founders Grotesk', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      line-height: 1.5;
+      color: #534F4C;
+    }
+    .eco-phone-wrap {
+      grid-column: 1;
+      grid-row: 1 / 5;
+      width: 300px;
+      height: 614px;
+      position: sticky;
+      top: 80px;
+    }
+    .eco-phone-screen {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      background-image: url(https://cdn.shopify.com/s/files/1/0098/6955/7815/files/Device.png?v=1774403760);
+    }
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    .site-footer {
+      background: #313131;
+      color: #efece4;
+      padding: 48px 24px 32px;
+    }
+    .footer-inner {
+      max-width: 1344px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 40px;
+    }
+    .footer-col h2 {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #efece4;
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 10px; }
+    .footer-col ul li a {
+      font-size: 15px;
+      color: #c5c2b8;
+      text-decoration: none;
+    }
+    .footer-col ul li a:hover { text-decoration: underline; color: #efece4; }
+    .footer-bottom {
+      max-width: 1344px;
+      margin: 40px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,.12);
+    }
+    .footer-bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+    .footer-newsletter h2,
+    .footer-app h2,
+    .footer-social h2 {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #efece4;
+      margin-bottom: 16px;
+    }
+    .newsletter-form {
+      display: flex;
+      gap: 0;
+      max-width: 360px;
+    }
+    .newsletter-form input[type="email"] {
+      flex: 1;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      border-right: none;
+      color: #efece4;
+      font-family: 'Founders Grotesk', sans-serif;
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      border-radius: 0;
+    }
+    .newsletter-form input[type="email"]::placeholder { color: rgba(239,236,228,.5); }
+    .newsletter-form button {
+      background: #407874;
+      color: #fff;
+      border: none;
+      font-family: 'Founders Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 18px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background .15s;
+    }
+    .newsletter-form button:hover { background: #2e5855; }
+    .newsletter-disclaimer {
+      font-size: 11px;
+      color: rgba(239,236,228,.5);
+      margin-top: 8px;
+      max-width: 360px;
+      line-height: 1.5;
+    }
+    .newsletter-disclaimer a { color: rgba(239,236,228,.6); text-decoration: underline; }
+    .footer-app-badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .footer-app-badges img { height: 31px; width: auto; }
+    .social-links { display: flex; gap: 16px; }
+    .social-links a { color: #efece4; font-size: 20px; }
+    .footer-disclaimer {
+      font-size: 11px;
+      color: rgba(239,236,228,.4);
+      margin-top: 24px;
+      line-height: 1.6;
+      max-width: 1344px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════ */
+    @media (max-width: 1100px) {
+      .eco-hiw-grid { grid-template-columns: 300px 1fr; width: 100%; }
+    }
+    @media (max-width: 900px) {
+      .eco-hero { padding: 40px 32px 56px; }
+      .eco-hero-inner { flex-direction: column-reverse; gap: 32px; }
+      .eco-hero-left { align-items: center; gap: 20px; }
+      .eco-hero-headline { text-align: center; font-size: 44px; }
+      .eco-hero-subtext { text-align: center; font-size: 20px; }
+      .eco-hero-img { max-height: 380px; }
+      .eco-badges { justify-content: center; }
+      .eco-hiw { padding: 56px 32px; }
+      .eco-hiw-inner { gap: 40px; }
+      .eco-hiw-headline { font-size: 44px; }
+      .footer-bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .eco-phone-wrap { display: none; }
+      .eco-feature:hover { background: transparent; }
+      .eco-hiw-grid { display: flex; flex-direction: column; gap: 8px; }
+      .eco-feature { max-width: 100%; margin: 0; }
+      .header-nav { display: none; }
+    }
+    @media (max-width: 600px) {
+      .eco-hero { padding: 36px 16px 48px; }
+      .eco-hiw { padding: 48px 16px; }
+      .eco-hiw-inner { gap: 32px; }
+      .eco-hero-headline, .eco-hiw-headline { font-size: 32px; }
+      .eco-hero-subtext { font-size: 17px; }
+      .eco-feature { padding: 16px; gap: 16px; border-radius: 16px; }
+      .eco-icon-wrap { width: 36px; height: 36px; }
+      .eco-icon-wrap svg { width: 36px; height: 36px; }
+      .eco-feature-title { font-size: 20px; }
+      .eco-feature-body { font-size: 16px; }
+      .eco-badges { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 12px; }
+      .footer-inner { grid-template-columns: 1fr 1fr; gap: 24px; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ── Navigation ── -->
-  <nav class="nav">
-    <div class="nav__inner">
-      <a href="/" class="nav__logo">
-        <span class="nav__logo-dot"></span>
-        eco<strong>ATM</strong>
+  <!-- ── Announcement bar ── -->
+  <div class="announce-bar">
+    <span>ecoATM for Business &nbsp;
+      <a href="https://www.ecoatmb2b.com/kiosks">Install Retail Kiosks</a>
+    </span>
+    <span>
+      <a href="https://www.ecoatmb2b.com/wholesale-devices">Buy Wholesale Devices</a>
+    </span>
+  </div>
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="https://www.ecoatm.com/" class="header-logo">
+        <img src="https://www.ecoatm.com/cdn/shop/files/ecoATM_logo_sea_RGB.png?v=1723069663&width=200"
+             alt="ecoATM" width="100" height="20">
       </a>
-      <div class="nav__links">
-        <a href="#how-it-works">How it works</a>
-        <a href="#channels">Get the link</a>
-        <a href="#download">Download app</a>
-      </div>
+      <nav class="header-nav">
+        <a href="https://www.ecoatm.com/pages/sell">Get A Quote</a>
+        <a href="https://locations.ecoatm.com/">Find a Kiosk</a>
+        <a href="https://www.ecoatm.com/pages/how-it-works">How it Works</a>
+        <a href="https://www.ecoatm.com/pages/how-to-prepare">Prepare Your Phone</a>
+        <a href="https://www.ecoatm.com/pages/our-story">About</a>
+      </nav>
+      <a href="/redirect?screen=sell&utm_source=web&utm_medium=header_cta&utm_campaign=mobile_app_page"
+         class="header-cta">Price Your Device</a>
     </div>
-  </nav>
+  </header>
 
-  <!-- ── Hero ── -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero__badge">📱 Turn your old device into cash</div>
-      <h1 class="hero__title">Sell your phone for <em>instant cash</em></h1>
-      <p class="hero__sub">Get a real offer in minutes at your nearest ecoATM kiosk. No haggling, no waiting, no hassle.</p>
-      <div class="hero__ctas">
-        <a href="/redirect?screen=sell&utm_source=web&utm_medium=hero_cta&utm_campaign=homepage" class="btn btn--primary">
-          Price my device →
-        </a>
-        <a href="/redirect?screen=find-kiosk&utm_source=web&utm_medium=hero_cta&utm_campaign=homepage" class="btn btn--outline">
-          Find a kiosk
-        </a>
+  <!-- ══════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════ -->
+  <section class="eco-hero">
+    <div class="eco-hero-inner">
+
+      <div class="eco-hero-left">
+        <h1 class="eco-hero-headline">Selling made easy.<br>Get the ecoATM app.</h1>
+        <p class="eco-hero-subtext">Recycling your phone is now easier than ever.</p>
+
+        <div class="eco-badges">
+          <!-- App Store -->
+          <a class="eco-badge-link"
+             href="/redirect?screen=sell&utm_source=web&utm_medium=app_badge&utm_campaign=mobile_app_page&utm_content=apple_badge"
+             aria-label="Download ecoATM on the App Store">
+            <svg width="168" height="48" viewBox="0 0 168 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M167.266 43.1881C167.266 45.8468 165.113 48 162.449 48H4.82231C2.16014 48 0 45.8468 0 43.1881V4.81813C0 2.16084 2.16014 0 4.82231 0H162.448C165.113 0 167.266 2.16084 167.266 4.81813V43.1881Z" fill="black"/>
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M36.7301 23.7358C36.6939 19.6875 40.0456 17.717 40.199 17.625C38.3011 14.8575 35.3579 14.4789 34.3245 14.4496C31.8534 14.1902 29.4569 15.9285 28.1976 15.9285C26.914 15.9285 24.9749 14.4754 22.8865 14.5179C20.1986 14.5598 17.6828 16.1161 16.3036 18.5328C13.4574 23.4611 15.5799 30.7043 18.3069 34.6878C19.6714 36.6381 21.2654 38.8171 23.3516 38.7397C25.3932 38.6553 26.1553 37.4379 28.6202 37.4379C31.0613 37.4379 31.7767 38.7397 33.9048 38.6909C36.0956 38.6553 37.4755 36.7315 38.7919 34.7624C40.3685 32.5263 41.0016 30.3236 41.0267 30.2107C40.9758 30.1939 36.772 28.5902 36.7301 23.7358Z" fill="white"/>
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M32.7115 11.8294C33.809 10.4565 34.5599 8.58847 34.3515 6.69189C32.7624 6.76232 30.7745 7.79079 29.631 9.13443C28.6185 10.3177 27.7135 12.2582 27.947 14.0823C29.7321 14.2147 31.5652 13.1814 32.7115 11.8294Z" fill="white"/>
+              <text x="55" y="16" fill="white" font-family="sans-serif" font-size="9" letter-spacing=".5">Download on the</text>
+              <text x="54" y="33" fill="white" font-family="sans-serif" font-size="18" font-weight="500" letter-spacing="-.3">App Store</text>
+            </svg>
+          </a>
+
+          <!-- Google Play -->
+          <a class="eco-badge-link"
+             href="/redirect?screen=sell&utm_source=web&utm_medium=app_badge&utm_campaign=mobile_app_page&utm_content=google_play_badge"
+             aria-label="Get ecoATM on Google Play">
+            <svg width="166" height="48" viewBox="0 0 166 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="166" height="48" rx="6" fill="black"/>
+              <path d="M16.2332 9.24547C15.8893 9.61178 15.688 10.176 15.688 10.9086V37.0897C15.688 37.8223 15.89 38.3865 16.2332 38.7528L16.3212 38.837L30.9278 24.1718V23.9991V23.8265L16.3212 9.16125L16.2332 9.24547Z" fill="url(#gp1)"/>
+              <path d="M35.8029 29.0649L30.9341 24.1723V23.9997V23.827L35.8029 18.9386L35.912 19.0018L41.6825 22.2944C43.3306 23.2333 43.3306 24.7744 41.6825 25.7133L35.912 29.006L35.8029 29.0649Z" fill="url(#gp2)"/>
+              <path d="M35.9087 29.0014L30.9308 23.9993L16.2361 38.753C16.7813 39.3298 17.6745 39.4014 18.6852 38.8245L35.9087 29.0014Z" fill="url(#gp3)"/>
+              <path d="M35.9087 19.0016L18.6852 9.17426C17.6745 8.59742 16.7771 8.669 16.2361 9.24584L30.9308 23.9995L35.9087 19.0016Z" fill="url(#gp4)"/>
+              <text x="49" y="16" fill="white" font-family="sans-serif" font-size="9" letter-spacing=".5">GET IT ON</text>
+              <text x="48" y="33" fill="white" font-family="sans-serif" font-size="17" font-weight="500" letter-spacing="-.2">Google Play</text>
+              <defs>
+                <linearGradient id="gp1" x1="0" y1="24" x2="32" y2="24" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#00A0FF"/><stop offset="1" stop-color="#00E3FF"/>
+                </linearGradient>
+                <linearGradient id="gp2" x1="30" y1="24" x2="44" y2="24" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FFE000"/><stop offset="1" stop-color="#FF9C00"/>
+                </linearGradient>
+                <linearGradient id="gp3" x1="16" y1="31" x2="36" y2="44" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FF3A44"/><stop offset="1" stop-color="#C31162"/>
+                </linearGradient>
+                <linearGradient id="gp4" x1="16" y1="4" x2="30" y2="18" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#32A071"/><stop offset="1" stop-color="#00F076"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </a>
+        </div>
       </div>
 
-      <!-- App store badges -->
-      <div class="store-badges" id="download">
-        <!-- iOS App Store -->
-        <a href="https://apps.apple.com/us/app/ecoatm/id944835823" class="btn btn--store" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          App Store
-        </a>
-        <!-- Google Play -->
-        <a href="https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android" class="btn btn--store" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.18 23.76c.3.17.64.22.97.15l12.48-7.22-2.82-2.82-10.63 9.89zM.5 1.55C.19 1.88 0 2.39 0 3.06v17.88c0 .67.19 1.18.51 1.51l.08.08 10.02-10.02v-.24L.58 1.47.5 1.55zm20.4 9.09l-2.87-1.66-3.17 3.17 3.17 3.17 2.89-1.67c.82-.48.82-1.25-.02-1.01zM3.18.24l10.63 9.89 2.82-2.82L4.15.09C3.82-.08 3.48-.03 3.18.24z"/></svg>
-          Google Play
-        </a>
+      <div class="eco-hero-right">
+        <img class="eco-hero-img"
+             src="https://cdn.shopify.com/s/files/1/0098/6955/7815/files/mobile-app-hero-image.png"
+             alt="ecoATM app home screen showing drop-off codes and current offer"
+             loading="eager"
+             onerror="this.src='https://cdn.shopify.com/s/files/1/0098/6955/7815/files/Device.png?v=1774403760'">
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       HOW IT WORKS
+  ══════════════════════════════════════════ -->
+  <section class="eco-hiw">
+    <div class="eco-hiw-inner">
+      <h2 class="eco-hiw-headline">Everything you need.<br>Right in the app.</h2>
+
+      <div class="eco-hiw-grid">
+
+        <!-- Card 1 — Get an offer -->
+        <div id="eco-card-1" class="eco-feature eco-selected">
+          <div class="eco-icon-wrap" aria-hidden="true">
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M36 15H24L19.5 8.34375C18.8438 7.40625 19.5938 6 20.7188 6H39.1875C40.3125 6 41.0625 7.40625 40.4062 8.34375L36 15ZM24 18H36C36.2812 18.2812 36.75 18.5625 37.2188 18.8438C42.4688 22.2188 54 29.5312 54 45C54 49.9688 49.9688 54 45 54H15C10.0312 54 6 49.9688 6 45C6 29.5312 17.4375 22.2188 22.7812 18.8438C23.1562 18.5625 23.625 18.2812 24 18ZM31.875 26.25C31.875 25.2188 31.0312 24.375 30 24.375C28.9688 24.375 28.125 25.2188 28.125 26.25V27.5625C27.375 27.75 26.625 28.0312 25.9688 28.4062C24.6562 29.1562 23.5312 30.5625 23.625 32.5312C23.625 34.4062 24.75 35.625 25.875 36.375C26.9062 36.9375 28.2188 37.3125 29.25 37.6875H29.4375C30.5625 38.0625 31.4062 38.3438 32.0625 38.7188C32.5312 39 32.5312 39.1875 32.5312 39.4688C32.625 39.9375 32.4375 40.2188 32.0625 40.4062C31.5938 40.7812 30.8438 40.875 30 40.875C28.9688 40.875 28.0312 40.5 26.7188 40.125C26.5312 40.0312 26.25 39.9375 26.0625 39.8438C25.0312 39.5625 24 40.0312 23.7188 41.0625C23.3438 42 23.9062 43.125 24.8438 43.4062C25.0312 43.5 25.2188 43.5 25.4062 43.5938C26.25 43.875 27.0938 44.1562 28.0312 44.4375V45.75C28.0312 46.7812 28.875 47.625 29.9062 47.625C30.9375 47.625 31.7812 46.7812 31.7812 45.75V44.5312C32.5312 44.3438 33.2812 44.0625 34.0312 43.6875C35.3438 42.8438 36.375 41.4375 36.2812 39.4688C36.2812 37.5 35.25 36.2812 34.0312 35.5312C32.9062 34.875 31.5938 34.4062 30.5625 34.125H30.4688C29.25 33.75 28.4062 33.4688 27.8438 33.0938C27.375 32.8125 27.2812 32.625 27.2812 32.5312C27.2812 32.1562 27.4688 31.875 27.9375 31.5938C28.4062 31.3125 29.1562 31.125 29.9062 31.125C30.8438 31.125 31.7812 31.4062 32.8125 31.6875C33.8438 31.875 34.875 31.3125 35.1562 30.2812C35.4375 29.3438 34.7812 28.3125 33.8438 28.0312C33.1875 27.8438 32.5312 27.6562 31.875 27.5625V26.25Z" fill="#407874"/>
+            </svg>
+          </div>
+          <div class="eco-feature-text">
+            <p class="eco-feature-title">Get an offer</p>
+            <p class="eco-feature-body">Lock in your phone's value anywhere, anytime.</p>
+          </div>
+        </div>
+
+        <!-- Card 2 — See all your codes -->
+        <div id="eco-card-3" class="eco-feature">
+          <div class="eco-icon-wrap" aria-hidden="true">
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 16.5C5.15625 16.5 4.5 17.25 4.5 18V42C4.5 42.8438 5.15625 43.5 6 43.5H54C54.75 43.5 55.5 42.8438 55.5 42V18C55.5 17.25 54.75 16.5 54 16.5H6ZM0 18C0 14.7188 2.625 12 6 12H54C57.2812 12 60 14.7188 60 18V42C60 45.375 57.2812 48 54 48H6C2.625 48 0 45.375 0 42V18ZM17.25 21C18.0938 21 18.9375 21.5625 19.2188 22.4062L25.2188 35.9062C25.7812 37.0312 25.2188 38.3438 24.0938 38.8125C22.9688 39.375 21.6562 38.8125 21.1875 37.6875L20.7188 36.8438H13.6875L13.3125 37.6875C12.75 38.8125 11.4375 39.375 10.3125 38.8125C9.1875 38.3438 8.625 37.0312 9.1875 35.9062L15.1875 22.4062C15.5625 21.5625 16.3125 21 17.25 21ZM17.25 28.875L15.6562 32.25H18.75L17.25 28.875ZM28.5 23.25C28.5 22.0312 29.4375 21 30.75 21H35.625C38.7188 21 41.25 23.5312 41.25 26.625C41.25 27.5625 40.9688 28.3125 40.6875 29.0625C41.9062 30.0938 42.75 31.6875 42.75 33.375C42.75 36.5625 40.2188 39 37.125 39H30.75C29.4375 39 28.5 38.0625 28.5 36.75V23.25ZM33 25.5V27.75H35.625C36.1875 27.75 36.75 27.2812 36.75 26.625C36.75 26.0625 36.1875 25.5 35.625 25.5H33ZM33 34.5H37.125C37.6875 34.5 38.25 34.0312 38.25 33.375C38.25 32.8125 37.6875 32.25 37.125 32.25H33V34.5Z" fill="#407874"/>
+            </svg>
+          </div>
+          <div class="eco-feature-text">
+            <p class="eco-feature-title">See all your codes in one spot</p>
+            <p class="eco-feature-body">Skip the email search and find all your drop off codes in one place.</p>
+          </div>
+        </div>
+
+        <!-- Card 3 — Find an ecoATM -->
+        <div id="eco-card-4" class="eco-feature">
+          <div class="eco-icon-wrap" aria-hidden="true">
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M32.1562 52.875C31.0312 54.2812 28.875 54.2812 27.75 52.875C22.9688 46.7812 12 32.25 12 24C12 14.0625 20.0625 6 30 6C39.9375 6 48 14.0625 48 24C48 32.25 37.0312 46.7812 32.1562 52.875ZM30 18C27.8438 18 25.875 19.2188 24.75 21C23.7188 22.875 23.7188 25.2188 24.75 27C25.875 28.875 27.8438 30 30 30C32.0625 30 34.0312 28.875 35.1562 27C36.1875 25.2188 36.1875 22.875 35.1562 21C34.0312 19.2188 32.0625 18 30 18Z" fill="#407874"/>
+            </svg>
+          </div>
+          <div class="eco-feature-text">
+            <p class="eco-feature-title">Find an ecoATM</p>
+            <p class="eco-feature-body">Use the built-in map to find which of our 7,500+ kiosks is nearest to you.</p>
+          </div>
+        </div>
+
+        <!-- Phone frame — must come after cards for CSS ~ selector -->
+        <div class="eco-phone-wrap" aria-hidden="true">
+          <div class="eco-phone-screen"></div>
+        </div>
+
       </div>
     </div>
   </section>
 
-  <!-- ── How it works ── -->
-  <section class="section section--alt" id="how-it-works">
-    <div class="container">
-      <div class="text-center">
-        <p class="section__eyebrow">Simple process</p>
-        <h2 class="section__title">How ecoATM works</h2>
-        <p class="section__sub">Three steps to turn your old device into cash today.</p>
+  <!-- ══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h2>Get Help</h2>
+        <ul>
+          <li><a href="https://www.ecoatm.com/pages/how-it-works">How it works</a></li>
+          <li><a href="https://www.ecoatm.com/pages/how-to-prepare">How to prepare your phone</a></li>
+          <li><a href="https://www.ecoatm.com/pages/frequently-asked-questions">FAQs</a></li>
+          <li><a href="https://www.ecoatm.com/pages/contact-us">Customer Service</a></li>
+        </ul>
       </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step__num">1</div>
-          <h3 class="step__title">Find a kiosk</h3>
-          <p class="step__desc">Locate your nearest ecoATM kiosk in thousands of retail stores nationwide.</p>
-        </div>
-        <div class="step">
-          <div class="step__num">2</div>
-          <h3 class="step__title">Get an offer</h3>
-          <p class="step__desc">Insert your device. The kiosk evaluates it and makes you an instant cash offer.</p>
-        </div>
-        <div class="step">
-          <div class="step__num">3</div>
-          <h3 class="step__title">Get paid instantly</h3>
-          <p class="step__desc">Accept the offer and walk away with cash on the spot. No waiting, no shipping.</p>
-        </div>
+      <div class="footer-col">
+        <h2>About ecoATM</h2>
+        <ul>
+          <li><a href="https://www.ecoatm.com/pages/our-story">Our Story</a></li>
+          <li><a href="https://blog.ecoatm.com/">Blog</a></li>
+          <li><a href="https://www.ecoatm.com/pages/environment-going-green">Going Green</a></li>
+          <li><a href="https://www.ecoatm.com/pages/helping-the-environment">Helping the Environment</a></li>
+          <li><a href="https://www.ecoatm.com/pages/data-security">Data Security</a></li>
+          <li><a href="https://www.ecoatm.com/pages/press-room">Press Room</a></li>
+          <li><a href="https://www.ecoatm.com/pages/careers">Careers</a></li>
+        </ul>
       </div>
-    </div>
-  </section>
-
-  <!-- ── Deep link targets ── -->
-  <section class="section section--alt" id="channels">
-    <div class="container">
-      <div class="text-center">
-        <p class="section__eyebrow">Deep link targets</p>
-        <h2 class="section__title">Every screen, one tap away</h2>
-        <p class="section__sub">Marketing links open directly to the right place in the app — no home screen detours.</p>
+      <div class="footer-col">
+        <h2>Law Enforcement</h2>
+        <ul>
+          <li><a href="https://www.ecoatm.com/pages/law-enforcement">Overview</a></li>
+          <li><a href="https://www.ecoatm.com/pages/law-enforcement-kiosk-security">Kiosk Security Features</a></li>
+          <li><a href="https://www.ecoatm.com/pages/law-enforcement-services">Training</a></li>
+          <li><a href="https://www.ecoatm.com/pages/law-enforcement-faqs">Law Enforcement FAQ</a></li>
+          <li><a href="https://www.ecoatm.com/pages/law-enforcement-contacts">Contact</a></li>
+        </ul>
       </div>
-      <div class="channels-grid">
-
-        <a href="/redirect?screen=sell&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
-          <div class="ch-card__icon">💰</div>
-          <h3 class="ch-card__title">Price your device</h3>
-          <p class="ch-card__desc">Multi-step estimator: brand → model → storage → carrier → condition → instant offer.</p>
-          <span class="ch-card__badge">/sell</span>
-        </a>
-
-        <a href="/redirect?screen=sell&sub-screen=this-device&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
-          <div class="ch-card__icon">📱</div>
-          <h3 class="ch-card__title">Sell this phone</h3>
-          <p class="ch-card__desc">Auto-detects the current device and pre-fills brand, model, and storage in the estimator.</p>
-          <span class="ch-card__badge">/sell/this-device</span>
-        </a>
-
-        <a href="/redirect?screen=find-kiosk&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
-          <div class="ch-card__icon">📍</div>
-          <h3 class="ch-card__title">Find a kiosk</h3>
-          <p class="ch-card__desc">Nearby kiosk list and map view with directions. Searchable by city, state, or zip code.</p>
-          <span class="ch-card__badge">/find-kiosk</span>
-        </a>
-
-        <a href="/redirect?screen=offers&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
-          <div class="ch-card__icon">🔒</div>
-          <h3 class="ch-card__title">Drop-off codes</h3>
-          <p class="ch-card__desc">Dashboard of active, expired, and sold drop-off codes. Links to specific codes via offer_id.</p>
-          <span class="ch-card__badge">/offers</span>
-        </a>
-
-        <a href="/redirect?screen=account&utm_source=web&utm_medium=card&utm_campaign=homepage" class="ch-card" style="text-decoration:none">
-          <div class="ch-card__icon">👤</div>
-          <h3 class="ch-card__title">My account</h3>
-          <p class="ch-card__desc">Account details, notification preferences, support, and legal. Requires sign-in.</p>
-          <span class="ch-card__badge">/account</span>
-        </a>
-
+      <div class="footer-col">
+        <h2>Other</h2>
+        <ul>
+          <li><a href="https://www.ecoatm.com/pages/privacy-policy">Privacy Policy</a></li>
+          <li><a href="https://www.ecoatm.com/pages/terms-and-conditions">Terms &amp; Conditions</a></li>
+          <li><a href="https://www.ecoatm.com/pages/accessibility-statement">Accessibility Statement</a></li>
+        </ul>
       </div>
     </div>
-  </section>
 
-  <!-- ── Footer ── -->
-  <footer class="footer">
-    <p>
-      <a href="https://www.ecoatm.com/privacy" target="_blank" rel="noopener">Privacy policy</a>
-      <a href="https://www.ecoatm.com/terms" target="_blank" rel="noopener">Terms of use</a>
-      <a href="https://www.ecoatm.com" target="_blank" rel="noopener">ecoatm.com</a>
-    </p>
-    <p style="margin-top:12px">&copy; 2026 ecoATM, LLC. All rights reserved.</p>
+    <div class="footer-bottom">
+      <div class="footer-bottom-grid">
+        <!-- Newsletter -->
+        <div class="footer-newsletter">
+          <h2>Let's Get Connected</h2>
+          <form class="newsletter-form" onsubmit="return false;">
+            <input type="email" placeholder="Subscribe To Our Newsletter" aria-label="Email address">
+            <button type="submit">Subscribe</button>
+          </form>
+          <p class="newsletter-disclaimer">
+            By clicking "Subscribe", you agree to receive our newsletters about our kiosks and promos.
+            You can opt-out at any time. <a href="https://www.ecoatm.com/pages/privacy-policy">Privacy Policy.</a>
+          </p>
+        </div>
+        <!-- App badges -->
+        <div class="footer-app">
+          <h2>Find us on the app store</h2>
+          <div class="footer-app-badges">
+            <a href="/redirect?screen=sell&utm_source=web&utm_medium=footer_badge&utm_campaign=mobile_app_page&utm_content=apple_badge"
+               aria-label="Download on the App Store">
+              <img src="https://cdn.shopify.com/s/files/1/0098/6955/7815/files/app-store-badge.webp"
+                   alt="Download on the App Store" height="31">
+            </a>
+            <a href="/redirect?screen=sell&utm_source=web&utm_medium=footer_badge&utm_campaign=mobile_app_page&utm_content=google_play_badge"
+               aria-label="Get it on Google Play">
+              <img src="https://cdn.shopify.com/s/files/1/0098/6955/7815/files/logo-google-play_3x_25b9b220-88bc-4d15-82ff-cfc55c82031b.webp"
+                   alt="Get it on Google Play" height="31">
+            </a>
+          </div>
+        </div>
+        <!-- Social -->
+        <div class="footer-social">
+          <h2>Follow us on social media</h2>
+          <div class="social-links">
+            <a href="https://www.facebook.com/ecoATM" aria-label="Facebook" target="_blank" rel="noopener">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M16.3 4.58H14.03c-.87 0-1.62.31-2.24.93-.59.62-.88 1.36-.88 2.23v2.23H9.09v2.7h1.81V19h2.7v-6.33h2.7V9.98h-2.7V8.17c0-.23.08-.42.26-.59.17-.2.38-.28.63-.28h1.81V4.58ZM1 2a1 1 0 011-1h16a1 1 0 011 1v15.96a1 1 0 01-1 1H2a1 1 0 01-1-1V2Z" fill="white"/></svg>
+            </a>
+            <a href="https://www.instagram.com/ecoatm/" aria-label="Instagram" target="_blank" rel="noopener">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M13.23 3.492c-.84-.037-1.096-.046-3.23-.046-2.144 0-2.39.01-3.238.055-.776.027-1.195.164-1.487.273a2.4 2.4 0 00-.912.593 2.5 2.5 0 00-.602.922c-.11.282-.238.702-.274 1.486-.046.84-.046 1.095-.046 3.23s.01 2.39.046 3.229c.004.51.097 1.016.274 1.495.145.365.319.639.602.913.282.282.538.456.92.602.474.176.974.268 1.479.273.848.046 1.103.046 3.238.046s2.39-.01 3.23-.046c.784-.036 1.203-.164 1.486-.273.374-.146.648-.329.921-.602.283-.283.447-.548.602-.922.177-.476.27-.979.274-1.486.037-.84.046-1.095.046-3.23s-.01-2.39-.055-3.229c-.027-.784-.164-1.204-.274-1.495a2.4 2.4 0 00-.593-.913 2.6 2.6 0 00-.92-.602c-.284-.11-.703-.237-1.488-.273ZM7.124 6.856a4.105 4.105 0 115.805 5.805 4.105 4.105 0 01-5.805-5.805m1.882 5.371a2.668 2.668 0 102.042-4.93 2.668 2.668 0 00-2.042 4.93m5.922-5.942a.958.958 0 11-1.355-1.355.958.958 0 011.355 1.355" clip-rule="evenodd"/></svg>
+            </a>
+            <a href="https://www.youtube.com/user/ecoATMvideos" aria-label="YouTube" target="_blank" rel="noopener">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M18.16 5.87c.34 1.309.34 4.08.34 4.08s0 2.771-.34 4.08a2.13 2.13 0 01-1.53 1.53c-1.309.34-6.63.34-6.63.34s-5.321 0-6.63-.34a2.13 2.13 0 01-1.53-1.53c-.34-1.309-.34-4.08-.34-4.08s0-2.771.34-4.08a2.17 2.17 0 011.53-1.53C4.679 4 10 4 10 4s5.321 0 6.63.34a2.17 2.17 0 011.53 1.53M8.3 12.5l4.42-2.55L8.3 7.4z"/></svg>
+            </a>
+            <a href="https://twitter.com/ecoATM" aria-label="X (Twitter)" target="_blank" rel="noopener">
+              <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.273 2.8 10.8 7.822 15.218 2.8h1.768l-5.4 6.139 5.799 8.254h-4.658l-3.73-5.31-4.671 5.31H2.558l5.654-6.427L2.615 2.8zm6.242 13.125L5.07 4.109h1.405l8.446 11.816z" clip-rule="evenodd"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="footer-disclaimer">
+        ©2014 - 2026 ecoATM, LLC. All Rights Reserved, Patents Pending. ecoATM is not affiliated with nor has it been
+        authorized, sponsored, or otherwise approved by the manufacturers of the items available for trade-in or purchase.
+        All devices available for purchase are used and/or refurbished. ecoATM and the ecoATM logo are trademarks of
+        ecoATM, LLC, registered in the U.S. All other trademarks, logos and brands are the property of their respective owners.
+        ecoATM, LLC CA DOJ #3711-2068
+      </p>
+    </div>
   </footer>
+
+  <!-- Phone screen switcher — same logic as original -->
+  <script>
+    (function () {
+      var imgs = {
+        'eco-card-1': 'https://cdn.shopify.com/s/files/1/0098/6955/7815/files/Device.png?v=1774403760',
+        'eco-card-3': 'https://cdn.shopify.com/s/files/1/0098/6955/7815/files/Device-2.png?v=1774403760',
+        'eco-card-4': 'https://cdn.shopify.com/s/files/1/0098/6955/7815/files/Device-3.png?v=1774403760'
+      };
+      var cards    = document.querySelectorAll('.eco-feature');
+      var screen   = document.querySelector('.eco-phone-screen');
+      var selected = imgs['eco-card-1'];
+
+      if (screen) screen.style.backgroundImage = 'url(' + selected + ')';
+
+      cards.forEach(function (card) {
+        card.addEventListener('mouseenter', function () {
+          if (screen && imgs[card.id]) screen.style.backgroundImage = 'url(' + imgs[card.id] + ')';
+        });
+        card.addEventListener('mouseleave', function () {
+          if (screen) screen.style.backgroundImage = 'url(' + selected + ')';
+        });
+        card.addEventListener('click', function () {
+          if (!imgs[card.id]) return;
+          selected = imgs[card.id];
+          cards.forEach(function (c) { c.classList.remove('eco-selected'); });
+          card.classList.add('eco-selected');
+          if (screen) screen.style.backgroundImage = 'url(' + selected + ')';
+        });
+      });
+    }());
+  </script>
 
 </body>
 </html>
