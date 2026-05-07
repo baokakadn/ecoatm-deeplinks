@@ -201,36 +201,6 @@
     window.location.href = appUri;
   }
 
-  /* ─── Facebook IAB banner ─────────────────────────────────── */
-  function showOpenInBrowserBanner(immediate) {
-    function render() {
-      if (document.getElementById('eco-iab-banner') || document.hidden) return;
-
-      var banner = document.createElement('div');
-      banner.id = 'eco-iab-banner';
-      banner.style.cssText = [
-        'position:fixed', 'bottom:0', 'left:0', 'right:0',
-        'background:#fff', 'border-top:1px solid #e0e0e0',
-        'padding:16px 20px', 'display:flex', 'align-items:center',
-        'gap:12px', 'z-index:9999', 'font-family:sans-serif',
-        'box-shadow:0 -2px 12px rgba(0,0,0,0.12)'
-      ].join(';');
-
-      banner.innerHTML =
-        '<div style="flex:1;font-size:14px;color:#1a1a1a;line-height:1.5">'
-        + '<strong style="display:block;margin-bottom:4px">' + CONFIG.banner.title + '</strong>'
-        + CONFIG.banner.body
-        + '</div>'
-        + '<button onclick="this.parentNode.remove()" style="'
-        + 'border:none;background:none;font-size:22px;cursor:pointer;color:#888;padding:4px;flex-shrink:0">'
-        + '\u00d7</button>';
-
-      document.body.appendChild(banner);
-    }
-
-    setTimeout(render, immediate ? 400 : 1800);
-  }
-
   /* ─── Main router ─────────────────────────────────────────── */
   function route() {
     var platform = getPlatform();
@@ -246,10 +216,12 @@
       return;
     }
 
-    /* Facebook IAB (Android) — blocks all URI schemes; show manual banner */
+    /* Facebook IAB (Android) — blocks intent://, try direct scheme.
+       Show "open in browser" banner early so user can act,
+       but still auto-redirect to store after timeout if app never opens. */
     if (isFacebook() && platform === 'android') {
       showOpenInBrowserBanner(true);
-      openAppDirectScheme(appUri, null);
+      openAppDirectScheme(appUri, storeUrl);
       return;
     }
 
