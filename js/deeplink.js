@@ -1,38 +1,36 @@
 (function () {
   'use strict';
 
-  /* ─── Config ────────────────────────────────────────────────────────── */
-
-  var ANDROID_PKG    = 'com.ecoatm.ecoapp.android_qa';
-  var IOS_STORE      = 'https://apps.apple.com/us/app/ecoatm/id944835823';
-  var ANDROID_STORE  = 'https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android';
-  var APP_SCHEME     = 'ecoatm://';
-  var TIMEOUT_MS     = 2500;
+  /* ─── Config ─────────────────────────────────────────────── */
+  var ANDROID_PKG     = 'com.ecoatm.ecoapp.android_qa';
+  var IOS_STORE       = 'https://apps.apple.com/us/app/ecoatm/id944835823';
+  var ANDROID_STORE   = 'https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android';
+  var APP_SCHEME      = 'ecoatm://';
+  var TIMEOUT_MS      = 2500;
 
   var WEB_FALLBACK = {
-    'home':        'https://www.ecoatm.com',
-    'sell':        'https://www.ecoatm.com/price-your-device',
-    'find-kiosk':  'https://www.ecoatm.com/locations',
-    'offers':      'https://www.ecoatm.com',
-    'account':     'https://www.ecoatm.com',
-    'price-view':  'https://www.ecoatm.com/price-your-device',
+    'home':       'https://www.ecoatm.com',
+    'sell':       'https://www.ecoatm.com/pages/sell',
+    'find-kiosk': 'https://locations.ecoatm.com',
+    'offers':     'https://www.ecoatm.com',
+    'account':    'https://www.ecoatm.com',
+    'price-view': 'https://www.ecoatm.com/pages/sell'
   };
 
   var PATH_TO_SCREEN = {
-    'email':       'home',
-    'sms':         'sell',
-    'social':      'sell',
-    'qr':          'sell',
-    'push':        'home',
-    'find-kiosk':  'find-kiosk',
-    'sell':        'sell',
-    'offers':      'offers',
-    'account':     'account',
-    'price-view':  'price-view',
+    'email':      'home',
+    'sms':        'sell',
+    'social':     'sell',
+    'qr':         'sell',
+    'push':       'home',
+    'find-kiosk': 'find-kiosk',
+    'sell':       'sell',
+    'offers':     'offers',
+    'account':    'account',
+    'price-view': 'price-view'
   };
 
-  /* ─── Platform detection ─────────────────────────────────────────────── */
-
+  /* ─── Platform detection ──────────────────────────────────── */
   function getPlatform() {
     var ua = navigator.userAgent || '';
     if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
@@ -40,23 +38,19 @@
     return 'desktop';
   }
 
-  function isInAppBrowser() {
-    var ua = navigator.userAgent || '';
-    return /FBAN|FBAV|Instagram|Twitter|LinkedInApp|TikTok|BytedanceWebview/i.test(ua);
-  }
-
   function isFacebookBrowser() {
-    var ua = navigator.userAgent || '';
-    return /FBAN|FBAV/i.test(ua);
+    return /FBAN|FBAV/i.test(navigator.userAgent || '');
   }
 
   function isInstagramBrowser() {
-    var ua = navigator.userAgent || '';
-    return /Instagram/i.test(ua);
+    return /Instagram/i.test(navigator.userAgent || '');
   }
 
-  /* ─── URL helpers ────────────────────────────────────────────────────── */
+  function isInAppBrowser() {
+    return /FBAN|FBAV|Instagram|Twitter|LinkedInApp|TikTok|BytedanceWebview/i.test(navigator.userAgent || '');
+  }
 
+  /* ─── URL helpers ─────────────────────────────────────────── */
   function getParams() {
     return new URLSearchParams(window.location.search);
   }
@@ -72,22 +66,25 @@
     return WEB_FALLBACK[screen] || 'https://www.ecoatm.com';
   }
 
-  function buildDeepLinkURI(screen, extra) {
+  function buildAppURI(screen, extra) {
     var path = 'screen/' + encodeURIComponent(screen);
+
     if (screen === 'offers'     && extra['offer_id'])    path += '/' + encodeURIComponent(extra['offer_id']);
     if (screen === 'find-kiosk' && extra['kiosk_id'])    path += '/' + encodeURIComponent(extra['kiosk_id']);
     if (screen === 'price-view' && extra['estimate_id']) path += '/' + encodeURIComponent(extra['estimate_id']);
     if (screen === 'sell'       && extra['sub-screen'] === 'this-device') path += '/this-device';
+
     var p = new URLSearchParams();
-    ['brand','model','utm_source','utm_medium','utm_campaign','utm_content']
+    ['brand', 'model', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content']
       .forEach(function (k) { if (extra[k]) p.set(k, extra[k]); });
+
     var qs = p.toString();
     return APP_SCHEME + path + (qs ? '?' + qs : '');
   }
 
-  function buildIntentUri(appUri, storeUrl) {
-    var withoutScheme = appUri.replace(APP_SCHEME, '');
-    return 'intent://' + withoutScheme
+  function buildIntentURI(appUri, storeUrl) {
+    var path = appUri.replace(APP_SCHEME, '');
+    return 'intent://' + path
       + '#Intent'
       + ';scheme=ecoatm'
       + ';package=' + ANDROID_PKG
@@ -95,149 +92,160 @@
       + ';end';
   }
 
-  /* ─── App open attempts ──────────────────────────────────────────────── */
+  /* ─── Status helper ───────────────────────────────────────── */
+  function updateStatus(msg) {
+    var el = document.getElementById('redirect-status');
+    if (el) el.textContent = msg;
+  }
 
-  function tryOpenApp(uri, storeUrl) {
-    updateStatus('Trying to open the ecoATM app\u2026');
+  /* ─── App open — native browsers (iOS & Android Chrome) ───── */
+  function tryOpenApp(appUri, storeUrl) {
+    updateStatus('Opening ecoATM app\u2026');
+
     var platform   = getPlatform();
     var redirected = false;
 
-    function goToStore() {
+    var timer = setTimeout(function () {
       if (redirected) return;
       redirected = true;
       updateStatus('App not found. Redirecting to store\u2026');
       window.location.href = storeUrl;
+    }, TIMEOUT_MS);
+
+    function cancel() {
+      if (redirected) return;
+      redirected = true;
+      clearTimeout(timer);
     }
 
-    var timer = setTimeout(goToStore, TIMEOUT_MS);
+    document.addEventListener('visibilitychange', function onVis() {
+      if (document.hidden) {
+        cancel();
+        document.removeEventListener('visibilitychange', onVis);
+      }
+    });
 
-    function onHide() {
-      clearTimeout(timer);
-      redirected = true;
-      document.removeEventListener('visibilitychange', onVisChange);
+    window.addEventListener('pagehide', function onHide() {
+      cancel();
       window.removeEventListener('pagehide', onHide);
-    }
-    function onVisChange() { if (document.hidden) onHide(); }
-    document.addEventListener('visibilitychange', onVisChange);
-    window.addEventListener('pagehide', onHide);
+    });
+
     window.addEventListener('pageshow', function onShow() {
-      clearTimeout(timer);
-      redirected = true;
+      cancel();
       window.removeEventListener('pageshow', onShow);
     }, { once: true });
 
     if (platform === 'ios') {
-      window.location.href = uri;
+      window.location.href = appUri;
     } else {
-      window.location.href = buildIntentUri(uri, storeUrl);
+      window.location.href = buildIntentURI(appUri, storeUrl);
     }
   }
 
-  function tryOpenAppDirectScheme(uri, storeUrl) {
+  /* ─── App open — Facebook/Instagram IAB (no intent:// support) */
+  function tryOpenAppDirectScheme(appUri, storeUrl) {
     var redirected = false;
 
-    var timer = storeUrl ? setTimeout(function () {
-      if (redirected) return;
-      redirected = true;
-      updateStatus('App not found. Redirecting to store\u2026');
-      window.location.href = storeUrl;
-    }, TIMEOUT_MS) : null;
+    var timer = storeUrl
+      ? setTimeout(function () {
+          if (redirected) return;
+          redirected = true;
+          updateStatus('App not found. Redirecting to store\u2026');
+          window.location.href = storeUrl;
+        }, TIMEOUT_MS)
+      : null;
 
-    function onHide() {
-      if (timer) clearTimeout(timer);
-      redirected = true;
-      document.removeEventListener('visibilitychange', onVisChange);
-    }
-    function onVisChange() { if (document.hidden) onHide(); }
-    document.addEventListener('visibilitychange', onVisChange);
+    document.addEventListener('visibilitychange', function onVis() {
+      if (document.hidden) {
+        if (timer) clearTimeout(timer);
+        redirected = true;
+        document.removeEventListener('visibilitychange', onVis);
+      }
+    });
 
-    window.location.href = uri;
+    window.location.href = appUri;
   }
 
-  /* ─── Facebook "Open in browser" banner ──────────────────────────────── */
-
-  function showOpenInBrowserPrompt(immediate) {
+  /* ─── Facebook "open in browser" banner ──────────────────── */
+  function showOpenInBrowserBanner(immediate) {
     function render() {
-      if (document.getElementById('open-in-browser-banner')) return;
+      if (document.getElementById('eco-iab-banner')) return;
       if (document.hidden) return;
+
       var banner = document.createElement('div');
-      banner.id = 'open-in-browser-banner';
+      banner.id = 'eco-iab-banner';
       banner.style.cssText = [
-        'position:fixed','bottom:0','left:0','right:0',
-        'background:#fff','border-top:1px solid #e0e0e0',
-        'padding:16px 20px','display:flex','align-items:center',
-        'gap:12px','z-index:9999','font-family:sans-serif',
+        'position:fixed', 'bottom:0', 'left:0', 'right:0',
+        'background:#fff', 'border-top:1px solid #e0e0e0',
+        'padding:16px 20px', 'display:flex', 'align-items:center',
+        'gap:12px', 'z-index:9999', 'font-family:sans-serif',
         'box-shadow:0 -2px 12px rgba(0,0,0,0.12)'
       ].join(';');
+
       banner.innerHTML =
         '<div style="flex:1;font-size:14px;color:#1a1a1a;line-height:1.5">'
         + '<strong style="display:block;margin-bottom:4px">Open in your browser to launch the ecoATM app</strong>'
         + 'Tap <strong>\u22ee</strong> at the top right, then choose '
         + '<em>\u201cOpen in Chrome\u201d</em> or <em>\u201cOpen in system browser\u201d</em>.'
         + '</div>'
-        + '<button onclick="this.parentNode.remove()" '
-        + 'style="border:none;background:none;font-size:22px;cursor:pointer;color:#888;padding:4px;flex-shrink:0">'
-        + '\u2715</button>';
+        + '<button onclick="this.parentNode.remove()" style="'
+        + 'border:none;background:none;font-size:22px;cursor:pointer;'
+        + 'color:#888;padding:4px;flex-shrink:0">\u00d7</button>';
+
       document.body.appendChild(banner);
     }
+
     setTimeout(render, immediate ? 400 : 1800);
   }
 
-  /* ─── Status helper ──────────────────────────────────────────────────── */
-
-  function updateStatus(msg) {
-    var el = document.getElementById('redirect-status');
-    if (el) el.textContent = msg;
-  }
-
-  /* ─── Main router ────────────────────────────────────────────────────── */
-
+  /* ─── Main router ─────────────────────────────────────────── */
   function route() {
     var platform = getPlatform();
     var params   = getParams();
     var screen   = getScreen();
-    var inIAB    = isInAppBrowser();
     var inFB     = isFacebookBrowser();
     var inIG     = isInstagramBrowser();
+    var inIAB    = isInAppBrowser();
 
-    var forwardKeys = [
-      'offer_id','kiosk_id','estimate_id','brand','model','sub-screen',
-      'utm_source','utm_medium','utm_campaign','utm_content'
+    var FORWARD_KEYS = [
+      'offer_id', 'kiosk_id', 'estimate_id',
+      'brand', 'model', 'sub-screen',
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'
     ];
     var extra = {};
-    forwardKeys.forEach(function (k) {
+    FORWARD_KEYS.forEach(function (k) {
       var v = params.get(k);
       if (v) extra[k] = v;
     });
 
-    var appUri   = buildDeepLinkURI(screen, extra);
+    var appUri   = buildAppURI(screen, extra);
     var storeUrl = platform === 'ios' ? IOS_STORE : ANDROID_STORE;
 
     updateStatus('Detecting your device\u2026');
 
-    /* Desktop */
+    /* Desktop → web fallback */
     if (platform === 'desktop') {
       updateStatus('Opening ecoATM website\u2026');
       window.location.replace(getWebFallback(screen));
       return;
     }
 
-    /* Facebook IAB — Android */
+    /* Facebook IAB — Android blocks intent:// and custom schemes */
     if (inFB && platform === 'android') {
       updateStatus('Opening ecoATM app\u2026');
-      showOpenInBrowserPrompt(true);
+      showOpenInBrowserBanner(true);
       tryOpenAppDirectScheme(appUri, null);
       return;
     }
 
-    /* Instagram IAB — Android (uses Chrome Custom Tab, intent:// works) */
+    /* Instagram IAB — Android uses Chrome Custom Tab, intent:// works */
     if (inIG && platform === 'android') {
       updateStatus('Opening ecoATM app\u2026');
       tryOpenApp(appUri, storeUrl);
       return;
     }
 
-    /* Any other IAB */
+    /* Other IAB (TikTok, Twitter, etc.) */
     if (inIAB) {
       updateStatus('Opening ecoATM app\u2026');
       if (platform === 'ios') {
@@ -248,12 +256,11 @@
       return;
     }
 
-    /* Native browsers — iOS and Android */
+    /* Native Safari / Chrome */
     tryOpenApp(appUri, storeUrl);
   }
 
-  /* ─── Boot ───────────────────────────────────────────────────────────── */
-
+  /* ─── Boot ────────────────────────────────────────────────── */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', route);
   } else {
