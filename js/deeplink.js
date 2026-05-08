@@ -121,8 +121,9 @@
    * We use requestAnimationFrame instead of setTimeout because Facebook IAB
    * freezes JS timers after navigation, but rAF keeps ticking.
    */
-  function routeAndroid() {
+ function routeAndroid() {
   if (!isAnyIAB) {
+    // Native browser: intent:// with OS fallback — already works.
     const appPath = buildAppUriForIntent();
     const fallback = encodeURIComponent(ANDROID_STORE_URL);
     const intentUrl =
@@ -136,10 +137,17 @@
     return;
   }
 
-  // Facebook IAB: force open current URL in the system browser.
-  // Once in Chrome/Samsung Browser, App Links and intent:// work normally.
+  // Facebook/Instagram/TikTok IAB on Android:
+  // Escape the IAB entirely by opening the current URL in the system browser.
+  // Once in Chrome/Samsung Browser, the native browser path above handles
+  // both cases: app installed → intent opens it, not installed → Play Store.
   var currentUrl = window.location.href;
-  window.open(currentUrl, '_blank');
+
+  // Method 1: intent to open URL in the default browser
+  var browserIntent =
+    'intent://' + currentUrl.replace(/https?:\/\//, '') +
+    '#Intent;scheme=https;action=android.intent.action.VIEW;end';
+  window.location.href = browserIntent;
 }
 
   /**
