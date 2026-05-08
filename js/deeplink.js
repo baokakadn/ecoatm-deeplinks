@@ -130,30 +130,34 @@
      * Android IAB (Facebook, TikTok, Twitter, etc.):
      *
      * App installed:
-     *   ecoatm:// fires → Facebook dialog appears within ~100-300ms
-     *   → window.blur fires → blurFired = true
-     *   → 500ms check sees blurFired = true → does nothing
-     *   → user taps Continue → app opens ✅
+     *   ecoatm:// fires → Facebook dialog appears
+     *   → document.hasFocus() returns false (dialog has focus)
+     *   → poll detects focus lost → stop, let user decide ✅
      *
      * App not installed:
-     *   ecoatm:// silently fails → no dialog → blur never fires
-     *   → 500ms check sees blurFired = false → redirect to store ✅
+     *   ecoatm:// silently fails → no dialog
+     *   → document.hasFocus() stays true
+     *   → poll reaches timeout → redirect to store ✅
      */
     if (isInAppBrowser() && platform === 'android') {
-      var blurFired = false;
-
-      window.addEventListener('blur', function onBlur() {
-        window.removeEventListener('blur', onBlur);
-        blurFired = true;
-      });
-
       window.location.href = appUri;
 
-      setTimeout(function () {
-        if (!blurFired) {
+      var elapsed  = 0;
+      var interval = setInterval(function () {
+        /* Dialog appeared — document lost focus — stop everything */
+        if (!document.hasFocus()) {
+          clearInterval(interval);
+          return;
+        }
+
+        elapsed += 50;
+
+        /* No dialog after 2.5s — app not installed, go to store */
+        if (elapsed >= CONFIG.timeout) {
+          clearInterval(interval);
           window.location.href = storeUrl;
         }
-      }, 500);
+      }, 50);
 
       return;
     }
