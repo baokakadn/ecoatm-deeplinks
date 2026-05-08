@@ -122,7 +122,6 @@
    * freezes JS timers after navigation, but rAF keeps ticking.
    */
   function routeAndroid() {
-  // Native Android browsers: intent:// works, OS handles fallback.
   if (!isAnyIAB) {
     const appPath = buildAppUriForIntent();
     const fallback = encodeURIComponent(ANDROID_STORE_URL);
@@ -137,20 +136,10 @@
     return;
   }
 
-  // Facebook/Instagram/TikTok IAB on Android.
-  //
-  // Every deep-link mechanism is broken in this environment:
-  //   - intent:// (top-level or iframe) → error page or silently fails
-  //   - ecoatm:// custom scheme → blocked, freezes JS thread
-  //   - setTimeout/setInterval/rAF → frozen after blocked navigation
-  //   - meta refresh → doesn't survive the freeze
-  //
-  // The only reliable action is plain https:// navigation.
-  //
-  // This is the same approach Branch, AppsFlyer, and Firebase Dynamic
-  // Links use for Facebook IAB. If the app is installed, the Play Store
-  // shows an "Open" button. If not, it shows "Install".
-  window.location.href = ANDROID_STORE_URL;
+  // Facebook IAB: force open current URL in the system browser.
+  // Once in Chrome/Samsung Browser, App Links and intent:// work normally.
+  var currentUrl = window.location.href;
+  window.open(currentUrl, '_blank');
 }
 
   /**
