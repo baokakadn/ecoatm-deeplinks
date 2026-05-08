@@ -3,9 +3,8 @@
 
   /* ─── Config ─────────────────────────────────────────────── */
   var CONFIG = {
-    scheme:     'ecoatm://',
-    androidPkg: 'com.ecoatm.ecoapp.android_qa',
-    timeout:    2500,
+    scheme:  'ecoatm://',
+    timeout: 2500,
 
     store: {
       ios:     'https://apps.apple.com/us/app/ecoatm/id944835823',
@@ -105,7 +104,6 @@
       + ';scheme=https'
       + ';action=android.intent.action.VIEW'
       + ';category=android.intent.category.BROWSABLE'
-      + ';package=' + CONFIG.androidPkg
       + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
       + ';end';
   }
