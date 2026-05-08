@@ -90,24 +90,6 @@
     return CONFIG.scheme + path + (qsStr ? '?' + qsStr : '');
   }
 
-  /* ─── Navigate via anchor click (avoids JS thread freeze) ─── */
-  /*
-   * Using a hidden <a> element and calling .click() fires the navigation
-   * through the DOM event system. Unlike window.location.href = 'ecoatm://',
-   * this does NOT freeze the JS thread on blocked schemes in Android WebViews,
-   * so setTimeout / setInterval continues to tick normally.
-   */
-  function navigateViaAnchor(uri) {
-    var a = document.createElement('a');
-    a.href = uri;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () {
-      if (document.body.contains(a)) document.body.removeChild(a);
-    }, 1000);
-  }
-
   /* ─── Visibility cancel helper ────────────────────────────── */
   function onAppOpened(cb) {
     function onVis() {
@@ -150,36 +132,16 @@
   }
 
   /*
-   * Android IAB open (Facebook, TikTok, Twitter, etc.).
+   * Android IAB (Facebook, TikTok, Twitter, etc.):
+   * Any ecoatm:// attempt freezes the JS thread in Facebook's WebView
+   * making timers and intervals stop working — no JS workaround exists.
    *
-   * Uses anchor click to fire ecoatm:// without freezing JS thread.
-   * Then polls document.hasFocus() every 50ms:
-   *
-   *   App installed:
-   *     Facebook dialog appears → steals focus → hasFocus() = false
-   *     → poll stops → user taps Continue → app opens ✅
-   *
-   *   App not installed:
-   *     ecoatm:// silently blocked → no dialog → hasFocus() stays true
-   *     → poll reaches timeout → store opens ✅
+   * Go straight to the store via plain https://:
+   *   App not installed → Play Store install page ✅
+   *   App installed     → Play Store shows "Open" button → opens app ✅
    */
-  function openAppInIAB(appUri, storeUrl) {
-    var elapsed  = 0;
-    var interval = setInterval(function () {
-      if (!document.hasFocus()) {
-        /* Dialog appeared — stop polling, user is in control */
-        clearInterval(interval);
-        return;
-      }
-      elapsed += 50;
-      if (elapsed >= CONFIG.timeout) {
-        clearInterval(interval);
-        window.location.href = storeUrl;
-      }
-    }, 50);
-
-    /* Fire scheme via anchor — does not freeze the JS thread */
-    navigateViaAnchor(appUri);
+  function openAppInIAB(storeUrl) {
+    window.location.href = storeUrl;
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
@@ -199,7 +161,7 @@
     if (platform === 'desktop') return;
 
     if (isInAppBrowser() && platform === 'android') {
-      openAppInIAB(appUri, storeUrl);
+      openAppInIAB(storeUrl);
       return;
     }
 
