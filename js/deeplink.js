@@ -128,37 +128,16 @@
 
     /*
      * Android IAB (Facebook, TikTok, Twitter, etc.):
+     * These WebViews block ecoatm:// silently and no JS event fires
+     * reliably to distinguish "app installed" from "app not installed".
+     * Any timer-based approach races against Facebook's own dialog.
      *
-     * App installed:
-     *   ecoatm:// fires → Facebook shows "You're leaving" dialog
-     *   User taps Continue → app opens ✅
-     *   No timer — avoids racing against the dialog.
-     *
-     * App NOT installed:
-     *   ecoatm:// silently fails, page stays visible.
-     *   After a short window (300ms), if page is still visible,
-     *   redirect straight to the store via plain https://
-     *   (same as tapping the badge — always works in any WebView).
+     * The only reliable action: go straight to the store via plain
+     * https:// — same as tapping the badge on the index page.
+     * Always works in any WebView, opens Store app directly.
      */
     if (isInAppBrowser() && platform === 'android') {
-      var appOpened = false;
-
-      function onLeave() {
-        appOpened = true;
-        document.removeEventListener('visibilitychange', onLeave);
-        window.removeEventListener('pagehide', onLeave);
-      }
-      document.addEventListener('visibilitychange', onLeave);
-      window.addEventListener('pagehide', onLeave);
-
-      window.location.href = appUri;
-
-      setTimeout(function () {
-        if (!appOpened) {
-          window.location.href = storeUrl;
-        }
-      }, 300);
-
+      window.location.href = storeUrl;
       return;
     }
 
