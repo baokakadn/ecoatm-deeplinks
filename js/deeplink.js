@@ -100,18 +100,26 @@
    * both "app installed → open" and "not installed → Play Store" via
    * S.browser_fallback_url. No JS fallback needed.
    *
-   * Facebook/Instagram IAB on Android: intent:// triggers the app if installed,
-   * but if the app is NOT installed, the IAB sometimes silently swallows the
-   * intent URL without honoring browser_fallback_url, leaving the user stuck
-   * on the index page. We need a JS-side fallback to Play Store.
+   * Facebook/Instagram IAB on Android: more complicated. Three scenarios:
    *
-   * The catch: setTimeout/setInterval freeze in Facebook IAB after a navigation
-   * attempt. requestAnimationFrame, however, keeps ticking because it's tied
-   * to the rendering pipeline. We use rAF to count elapsed time and redirect
-   * to the Play Store if we're still on this page after ~2.5s.
+   *   1. App installed, no chooser dialog: OS opens app → page goes hidden →
+   *      visibilitychange/pagehide/blur fire → we cancel.
    *
-   * If the app DID open, the page goes hidden and pagehide/visibilitychange
-   * fire — we cancel the fallback in that case.
+   *   2. App installed, OS shows "Open with ecoATM? [Cancel][Continue]" dialog:
+   *      WebView loses focus while dialog is up → blur fires → we cancel.
+   *      We must NOT redirect to the store here — the user has been offered
+   *      a choice, and either outcome (open app or cancel) is intentional.
+   *
+   *   3. App not installed and IAB silently swallows the intent:
+   *      No dialog, no focus change, no visibility change. The page just sits.
+   *      After our timeout we redirect to Play Store as the fallback.
+   *
+   * The discriminator between scenarios 2 and 3 is whether `blur` ever fired.
+   * Once blur fires we permanently cancel — even if the user later cancels
+   * the dialog, redirecting them to the store would be hostile.
+   *
+   * We use requestAnimationFrame instead of setTimeout because Facebook IAB
+   * freezes JS timers after navigation, but rAF keeps ticking.
    */
   function routeAndroid() {
     const appPath = buildAppUriForIntent();
@@ -125,15 +133,13 @@
       `S.browser_fallback_url=${fallback};` +
       `end`;
 
-    // For native Android browsers, intent:// alone is sufficient.
+    // Native Android browsers handle intent:// correctly on their own.
     if (!isAnyIAB) {
       window.location.href = intentUrl;
       return;
     }
 
-    // Facebook/Instagram/TikTok IAB on Android: arm a rAF-based fallback
-    // before firing the intent, so the loop is already running by the time
-    // setTimeout would have frozen.
+    // Facebook/Instagram/TikTok IAB on Android.
     let cancelled = false;
     const startedAt = Date.now();
 
@@ -141,6 +147,8 @@
       cancelled = true;
     }
 
+    // Any of these signals mean either the app is opening or the OS is
+    // showing the intent chooser dialog. In both cases, do not redirect.
     document.addEventListener('visibilitychange', function () {
       if (isPageHidden()) cancel();
     });
@@ -149,14 +157,22 @@
 
     function tick() {
       if (cancelled) return;
+
+      // Defensive: if focus was lost between rAF frames without firing blur
+      // (rare but seen on some Android WebView builds), treat as cancelled.
+      if (document.hasFocus && !document.hasFocus()) {
+        cancel();
+        return;
+      }
       if (isPageHidden()) {
         cancel();
         return;
       }
+
       const elapsed = Date.now() - startedAt;
       if (elapsed >= FALLBACK_TIMEOUT_MS) {
-        // Still here → app didn't open → go to Play Store directly.
-        // Plain https navigation works reliably in Facebook IAB.
+        // Page never lost focus, never went hidden, no dialog ever appeared.
+        // Intent was silently swallowed → app is not installed → go to store.
         window.location.href = ANDROID_STORE_URL;
         return;
       }
@@ -164,8 +180,10 @@
     }
     requestAnimationFrame(tick);
 
-    // Fire the intent. If app is installed, OS opens it and the rAF loop
-    // will see the page go hidden via visibilitychange and cancel.
+    // Fire the intent. From here, one of three things happens:
+    //   - App opens directly → page hides → cancel.
+    //   - Dialog appears → focus lost → blur → cancel.
+    //   - Nothing happens → tick() eventually times out → store.
     window.location.href = intentUrl;
   }
 
