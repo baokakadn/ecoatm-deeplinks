@@ -127,18 +127,38 @@
     var platform = getPlatform();
 
     /*
-     * Facebook IAB (Android):
-     * Shows a "You're leaving our app" dialog before opening any external app.
-     * No timer — let the user decide:
-     *   App installed  → user taps Continue → app opens ✅
-     *   App not installed → dialog doesn't appear → index page shows
-     *                       with store badges the user can tap ✅
+     * Android IAB (Facebook, TikTok, Twitter, etc.):
      *
-     * A timer would race against the dialog and incorrectly send the
-     * user to the store before they can tap Continue.
+     * App installed:
+     *   ecoatm:// fires → Facebook shows "You're leaving" dialog
+     *   User taps Continue → app opens ✅
+     *   No timer — avoids racing against the dialog.
+     *
+     * App NOT installed:
+     *   ecoatm:// silently fails, page stays visible.
+     *   After a short window (300ms), if page is still visible,
+     *   redirect straight to the store via plain https://
+     *   (same as tapping the badge — always works in any WebView).
      */
     if (isInAppBrowser() && platform === 'android') {
+      var appOpened = false;
+
+      function onLeave() {
+        appOpened = true;
+        document.removeEventListener('visibilitychange', onLeave);
+        window.removeEventListener('pagehide', onLeave);
+      }
+      document.addEventListener('visibilitychange', onLeave);
+      window.addEventListener('pagehide', onLeave);
+
       window.location.href = appUri;
+
+      setTimeout(function () {
+        if (!appOpened) {
+          window.location.href = storeUrl;
+        }
+      }, 300);
+
       return;
     }
 
