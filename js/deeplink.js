@@ -48,11 +48,8 @@
     ],
 
     ua: {
-      ios:          /iPhone|iPad|iPod/i,
-      android:      /Android/i,
-      facebook:     /FBAN|FBAV/i,
-      instagram:    /Instagram/i,
-      inAppBrowser: /FBAN|FBAV|Instagram|Twitter|LinkedInApp|TikTok|BytedanceWebview/i
+      ios:     /iPhone|iPad|iPod/i,
+      android: /Android/i
     }
   };
 
@@ -60,9 +57,6 @@
   var UA = navigator.userAgent || '';
 
   function getPlatform()    { return CONFIG.ua.ios.test(UA) ? 'ios' : CONFIG.ua.android.test(UA) ? 'android' : 'desktop'; }
-  function isFacebook()     { return CONFIG.ua.facebook.test(UA); }
-  function isInstagram()    { return CONFIG.ua.instagram.test(UA); }
-  function isInAppBrowser() { return CONFIG.ua.inAppBrowser.test(UA); }
 
   /* ─── URL helpers ─────────────────────────────────────────── */
   function getParams() { return new URLSearchParams(window.location.search); }
