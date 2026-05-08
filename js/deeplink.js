@@ -90,23 +90,6 @@
     return CONFIG.scheme + path + (qsStr ? '?' + qsStr : '');
   }
 
-  /*
-   * Build an Android Intent URI using the current HTTPS page URL.
-   * scheme=https makes the OS treat this as a normal https:// navigation
-   * but routed through the Intent system — which triggers App Links
-   * verification and opens the app if verified.
-   * S.browser_fallback_url sends to the Play Store if app is not installed.
-   */
-  function buildAppLinkIntentURI() {
-    var currentUrl = window.location.href;
-    return 'intent://' + currentUrl.replace(/^https?:\/\//, '')
-      + '#Intent'
-      + ';scheme=https'
-      + ';action=android.intent.action.VIEW'
-      + ';category=android.intent.category.BROWSABLE'
-      + ';end';
-  }
-
   /* ─── Visibility cancel helper ────────────────────────────── */
   function onAppOpened(cb) {
     function onVis() {
@@ -122,15 +105,24 @@
     window.addEventListener('pagehide', onHide);
   }
 
-  /* ─── Open strategies ─────────────────────────────────────── */
-
+  /* ─── Single open strategy for all browsers and IABs ─────── */
   /*
-   * Native browser — ecoatm:// custom URI scheme.
-   * App installed  → opens immediately.
-   * App missing    → timeout fires → store.
+   * Step 1: Fire ecoatm:// URI scheme.
+   *   - App installed → OS opens app immediately → page goes hidden → done ✅
+   *   - App not installed OR scheme blocked → nothing happens, page stays visible
+   *
+   * Step 2: setTimeout fires after 2.5s if page is still visible.
+   *   - window.location.href = storeUrl  (plain https://)
+   *   - This is identical to tapping the App Store / Google Play badge
+   *     on the index page — opens the Store app directly, works in
+   *     every browser including Facebook IAB ✅
+   *
+   * Note: In IABs where ecoatm:// is blocked, Step 1 silently fails
+   * and Step 2 fires after the timeout. The Store opens directly — no
+   * external browser, no intent URI, no "Page can't be loaded".
    */
-  function openAppViaScheme(appUri, storeUrl) {
-    var done  = false;
+  function openApp(appUri, storeUrl) {
+    var done = false;
 
     var timer = setTimeout(function () {
       if (done) return;
@@ -145,38 +137,6 @@
     });
 
     window.location.href = appUri;
-  }
-
-  /*
-   * Android IAB — parallel approach:
-   *
-   * Fire the App Link intent URI (no package=, no S.browser_fallback_url).
-   * At the same time, start a timer that goes to the store via plain https://.
-   *
-   * App installed + verified → OS opens app → page goes hidden
-   *                          → timer cancelled ✅
-   *
-   * App NOT installed       → intent fires but nothing opens
-   *                          → page stays visible
-   *                          → timer fires → window.location.href = storeUrl
-   *                          → Play Store app opens directly ✅
-   *                          (same mechanism as tapping the badge on index page)
-   */
-  function openAppViaAppLink(storeUrl) {
-    var appOpened = false;
-
-    onAppOpened(function () { appOpened = true; });
-
-    var timer = setTimeout(function () {
-      if (!appOpened && !document.hidden) {
-        window.location.href = storeUrl;
-      }
-    }, CONFIG.timeout);
-
-    /* Fire intent — no fallback URL inside the intent itself.
-       The JS timer above is the fallback — it's more reliable because
-       it uses plain https:// navigation which always works in any WebView. */
-    window.location.href = buildAppLinkIntentURI();
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
@@ -197,24 +157,8 @@
     /* Desktop — show marketing page as-is */
     if (platform === 'desktop') return;
 
-    if (platform === 'android') {
-      /*
-       * Android IAB — use App Link intent URI (https scheme).
-       * Bypasses the WebView custom scheme block while still
-       * triggering App Links to open the app directly.
-       */
-      if (isInAppBrowser()) {
-        openAppViaAppLink(storeUrl);
-        return;
-      }
-
-      /* Android native browser — ecoatm:// scheme + timeout fallback */
-      openAppViaScheme(appUri, storeUrl);
-      return;
-    }
-
-    /* iOS — all browsers use ecoatm:// scheme + timeout fallback */
-    openAppViaScheme(appUri, storeUrl);
+    /* iOS and Android — same strategy for all browsers and IABs */
+    openApp(appUri, storeUrl);
   }
 
   /* ─── Boot ────────────────────────────────────────────────── */
