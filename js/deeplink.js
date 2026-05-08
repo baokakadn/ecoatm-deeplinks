@@ -58,7 +58,6 @@
 
   function getPlatform()    { return CONFIG.ua.ios.test(UA) ? 'ios' : CONFIG.ua.android.test(UA) ? 'android' : 'desktop'; }
   function isInAppBrowser() { return CONFIG.ua.inAppBrowser.test(UA); }
-
   /* ─── URL helpers ─────────────────────────────────────────── */
   function getParams() { return new URLSearchParams(window.location.search); }
 
@@ -125,49 +124,54 @@
    * external browser, no intent URI, no "Page can't be loaded".
    */
   function openApp(appUri, storeUrl) {
-    var done        = false;
-    var dialogShown = false;
-
-    /* Track if dialog appeared via any available signal */
-    function onDialogAppear() {
-      dialogShown = true;
-    }
-
-    window.addEventListener('blur',               onDialogAppear);
-    document.addEventListener('visibilitychange', onDialogAppear);
-    window.addEventListener('pagehide',           onDialogAppear);
-
-    function cleanup() {
-      window.removeEventListener('blur',               onDialogAppear);
-      document.removeEventListener('visibilitychange', onDialogAppear);
-      window.removeEventListener('pagehide',           onDialogAppear);
-    }
-
-    /* Fire the scheme */
-    window.location.href = appUri;
+    var platform = getPlatform();
 
     /*
-     * Poll every 200ms whether to redirect to store.
-     * Only redirect if:
-     *   - No dialog appeared (dialogShown is still false) AND
-     *   - Enough time has passed (CONFIG.timeout)
-     * If a dialog appeared, stop polling — user is in control.
+     * Facebook IAB (Android):
+     * Shows a "You're leaving our app" dialog before opening any external app.
+     * No timer — let the user decide:
+     *   App installed  → user taps Continue → app opens ✅
+     *   App not installed → dialog doesn't appear → index page shows
+     *                       with store badges the user can tap ✅
+     *
+     * A timer would race against the dialog and incorrectly send the
+     * user to the store before they can tap Continue.
      */
-    var elapsed  = 0;
-    var interval = setInterval(function () {
-      if (done) { clearInterval(interval); cleanup(); return; }
+    if (isInAppBrowser() && platform === 'android') {
+      window.location.href = appUri;
+      return;
+    }
 
-      /* Dialog appeared — stop polling, let user decide */
-      if (dialogShown) { clearInterval(interval); cleanup(); return; }
+    /*
+     * All other browsers (native Chrome, Safari, other IABs):
+     * Fire scheme + timeout fallback to store.
+     */
+    var done = false;
 
-      elapsed += 200;
-      if (elapsed >= CONFIG.timeout) {
-        clearInterval(interval);
-        cleanup();
-        done = true;
-        window.location.href = storeUrl;
-      }
-    }, 200);
+    var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      window.location.href = storeUrl;
+    }, CONFIG.timeout);
+
+    function onAppOpened() {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+    }
+
+    document.addEventListener('visibilitychange', function onVis() {
+      if (!document.hidden) return;
+      document.removeEventListener('visibilitychange', onVis);
+      onAppOpened();
+    });
+
+    window.addEventListener('pagehide', function onHide() {
+      window.removeEventListener('pagehide', onHide);
+      onAppOpened();
+    });
+
+    window.location.href = appUri;
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
