@@ -94,12 +94,24 @@
   // ---------- Routing strategies ----------
 
   /**
-   * Android strategy (works in all browsers including Facebook IAB).
+   * Android strategy.
    *
-   * intent:// URLs are interpreted by the Android system, not the WebView.
-   * If the app is installed, Android opens it directly.
-   * If not, S.browser_fallback_url tells Android to open the Play Store URL.
-   * No JS timer required — the OS handles the fallback atomically.
+   * Native Chrome/Samsung browser: intent:// URL is enough — the OS handles
+   * both "app installed → open" and "not installed → Play Store" via
+   * S.browser_fallback_url. No JS fallback needed.
+   *
+   * Facebook/Instagram IAB on Android: intent:// triggers the app if installed,
+   * but if the app is NOT installed, the IAB sometimes silently swallows the
+   * intent URL without honoring browser_fallback_url, leaving the user stuck
+   * on the index page. We need a JS-side fallback to Play Store.
+   *
+   * The catch: setTimeout/setInterval freeze in Facebook IAB after a navigation
+   * attempt. requestAnimationFrame, however, keeps ticking because it's tied
+   * to the rendering pipeline. We use rAF to count elapsed time and redirect
+   * to the Play Store if we're still on this page after ~2.5s.
+   *
+   * If the app DID open, the page goes hidden and pagehide/visibilitychange
+   * fire — we cancel the fallback in that case.
    */
   function routeAndroid() {
     const appPath = buildAppUriForIntent();
@@ -113,6 +125,47 @@
       `S.browser_fallback_url=${fallback};` +
       `end`;
 
+    // For native Android browsers, intent:// alone is sufficient.
+    if (!isAnyIAB) {
+      window.location.href = intentUrl;
+      return;
+    }
+
+    // Facebook/Instagram/TikTok IAB on Android: arm a rAF-based fallback
+    // before firing the intent, so the loop is already running by the time
+    // setTimeout would have frozen.
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    function cancel() {
+      cancelled = true;
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (isPageHidden()) cancel();
+    });
+    window.addEventListener('pagehide', cancel);
+    window.addEventListener('blur', cancel);
+
+    function tick() {
+      if (cancelled) return;
+      if (isPageHidden()) {
+        cancel();
+        return;
+      }
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= FALLBACK_TIMEOUT_MS) {
+        // Still here → app didn't open → go to Play Store directly.
+        // Plain https navigation works reliably in Facebook IAB.
+        window.location.href = ANDROID_STORE_URL;
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Fire the intent. If app is installed, OS opens it and the rAF loop
+    // will see the page go hidden via visibilitychange and cancel.
     window.location.href = intentUrl;
   }
 
