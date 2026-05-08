@@ -58,6 +58,7 @@
 
   function getPlatform()    { return CONFIG.ua.ios.test(UA) ? 'ios' : CONFIG.ua.android.test(UA) ? 'android' : 'desktop'; }
   function isInAppBrowser() { return CONFIG.ua.inAppBrowser.test(UA); }
+
   /* ─── URL helpers ─────────────────────────────────────────── */
   function getParams() { return new URLSearchParams(window.location.search); }
 
@@ -89,83 +90,48 @@
     return CONFIG.scheme + path + (qsStr ? '?' + qsStr : '');
   }
 
+  /* ─── Navigate via anchor click (avoids JS thread freeze) ─── */
+  /*
+   * Using a hidden <a> element and calling .click() fires the navigation
+   * through the DOM event system. Unlike window.location.href = 'ecoatm://',
+   * this does NOT freeze the JS thread on blocked schemes in Android WebViews,
+   * so setTimeout / setInterval continues to tick normally.
+   */
+  function navigateViaAnchor(uri) {
+    var a = document.createElement('a');
+    a.href = uri;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      if (document.body.contains(a)) document.body.removeChild(a);
+    }, 1000);
+  }
+
   /* ─── Visibility cancel helper ────────────────────────────── */
   function onAppOpened(cb) {
     function onVis() {
       if (!document.hidden) return;
       cleanup(); cb();
     }
-    function onHide()  { cleanup(); cb(); }
-    function onBlur()  { cleanup(); cb(); } // fires when OS dialog steals focus
+    function onHide() { cleanup(); cb(); }
     function cleanup() {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onHide);
-      window.removeEventListener('blur', onBlur);
     }
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onHide);
-    window.addEventListener('blur', onBlur);
   }
 
-  /* ─── Single open strategy for all browsers and IABs ─────── */
+  /* ─── Open strategies ─────────────────────────────────────── */
+
   /*
-   * Step 1: Fire ecoatm:// URI scheme.
-   *   - App installed → OS opens app immediately → page goes hidden → done ✅
-   *   - App not installed OR scheme blocked → nothing happens, page stays visible
-   *
-   * Step 2: setTimeout fires after 2.5s if page is still visible.
-   *   - window.location.href = storeUrl  (plain https://)
-   *   - This is identical to tapping the App Store / Google Play badge
-   *     on the index page — opens the Store app directly, works in
-   *     every browser including Facebook IAB ✅
-   *
-   * Note: In IABs where ecoatm:// is blocked, Step 1 silently fails
-   * and Step 2 fires after the timeout. The Store opens directly — no
-   * external browser, no intent URI, no "Page can't be loaded".
+   * Standard open — all native browsers + iOS IABs.
+   * Fires ecoatm:// via anchor click to avoid thread freeze.
+   * App installed  → page goes hidden → timer cancelled ✅
+   * App missing    → timeout fires → store ✅
    */
   function openApp(appUri, storeUrl) {
-    var platform = getPlatform();
-
-    /*
-     * Android IAB (Facebook, TikTok, Twitter, etc.):
-     *
-     * App installed:
-     *   ecoatm:// fires → Facebook dialog appears
-     *   → document.hasFocus() returns false (dialog has focus)
-     *   → poll detects focus lost → stop, let user decide ✅
-     *
-     * App not installed:
-     *   ecoatm:// silently fails → no dialog
-     *   → document.hasFocus() stays true
-     *   → poll reaches timeout → redirect to store ✅
-     */
-    if (isInAppBrowser() && platform === 'android') {
-      window.location.href = appUri;
-
-      var elapsed  = 0;
-      var interval = setInterval(function () {
-        /* Dialog appeared — document lost focus — stop everything */
-        if (!document.hasFocus()) {
-          clearInterval(interval);
-          return;
-        }
-
-        elapsed += 50;
-
-        /* No dialog after 2.5s — app not installed, go to store */
-        if (elapsed >= CONFIG.timeout) {
-          clearInterval(interval);
-          window.location.href = storeUrl;
-        }
-      }, 50);
-
-      return;
-    }
-
-    /*
-     * All other browsers (native Chrome, Safari, other IABs):
-     * Fire scheme + timeout fallback to store.
-     */
     var done = false;
 
     var timer = setTimeout(function () {
@@ -174,24 +140,46 @@
       window.location.href = storeUrl;
     }, CONFIG.timeout);
 
-    function onAppOpened() {
+    onAppOpened(function () {
       if (done) return;
       done = true;
       clearTimeout(timer);
-    }
-
-    document.addEventListener('visibilitychange', function onVis() {
-      if (!document.hidden) return;
-      document.removeEventListener('visibilitychange', onVis);
-      onAppOpened();
     });
 
-    window.addEventListener('pagehide', function onHide() {
-      window.removeEventListener('pagehide', onHide);
-      onAppOpened();
-    });
+    navigateViaAnchor(appUri);
+  }
 
-    window.location.href = appUri;
+  /*
+   * Android IAB open (Facebook, TikTok, Twitter, etc.).
+   *
+   * Uses anchor click to fire ecoatm:// without freezing JS thread.
+   * Then polls document.hasFocus() every 50ms:
+   *
+   *   App installed:
+   *     Facebook dialog appears → steals focus → hasFocus() = false
+   *     → poll stops → user taps Continue → app opens ✅
+   *
+   *   App not installed:
+   *     ecoatm:// silently blocked → no dialog → hasFocus() stays true
+   *     → poll reaches timeout → store opens ✅
+   */
+  function openAppInIAB(appUri, storeUrl) {
+    var elapsed  = 0;
+    var interval = setInterval(function () {
+      if (!document.hasFocus()) {
+        /* Dialog appeared — stop polling, user is in control */
+        clearInterval(interval);
+        return;
+      }
+      elapsed += 50;
+      if (elapsed >= CONFIG.timeout) {
+        clearInterval(interval);
+        window.location.href = storeUrl;
+      }
+    }, 50);
+
+    /* Fire scheme via anchor — does not freeze the JS thread */
+    navigateViaAnchor(appUri);
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
@@ -201,7 +189,6 @@
     var hasPath = window.location.pathname !== '/'
                   && window.location.pathname !== '/index.html';
 
-    /* No deep link params — plain homepage visit, do nothing */
     if (!screen && !hasPath) return;
 
     var platform       = getPlatform();
@@ -209,10 +196,13 @@
     var appUri         = buildAppURI(resolvedScreen, params);
     var storeUrl       = CONFIG.store[platform] || CONFIG.store.android;
 
-    /* Desktop — show marketing page as-is */
     if (platform === 'desktop') return;
 
-    /* iOS and Android — same strategy for all browsers and IABs */
+    if (isInAppBrowser() && platform === 'android') {
+      openAppInIAB(appUri, storeUrl);
+      return;
+    }
+
     openApp(appUri, storeUrl);
   }
 
