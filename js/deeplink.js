@@ -130,31 +130,31 @@
      * Android IAB (Facebook, TikTok, Twitter, etc.):
      *
      * App installed:
-     *   ecoatm:// fires → Facebook shows "You're leaving" dialog
-     *   → window.blur fires (dialog steals focus from WebView)
-     *   → timer cancelled → user taps Continue → app opens ✅
+     *   ecoatm:// fires → Facebook dialog appears within ~100-300ms
+     *   → window.blur fires → blurFired = true
+     *   → 500ms check sees blurFired = true → does nothing
+     *   → user taps Continue → app opens ✅
      *
      * App not installed:
-     *   ecoatm:// silently fails → blur never fires
-     *   → timer fires after 2.5s → store opens ✅
+     *   ecoatm:// silently fails → no dialog → blur never fires
+     *   → 500ms check sees blurFired = false → redirect to store ✅
      */
     if (isInAppBrowser() && platform === 'android') {
-      var done = false;
-
-      var timer = setTimeout(function () {
-        if (done) return;
-        done = true;
-        window.location.href = storeUrl;
-      }, CONFIG.timeout);
+      var blurFired = false;
 
       window.addEventListener('blur', function onBlur() {
         window.removeEventListener('blur', onBlur);
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
+        blurFired = true;
       });
 
       window.location.href = appUri;
+
+      setTimeout(function () {
+        if (!blurFired) {
+          window.location.href = storeUrl;
+        }
+      }, 500);
+
       return;
     }
 
