@@ -91,6 +91,25 @@
     return CONFIG.scheme + path + (qsStr ? '?' + qsStr : '');
   }
 
+  /*
+   * Build an Android Intent URI using the current HTTPS page URL.
+   * scheme=https makes the OS treat this as a normal https:// navigation
+   * but routed through the Intent system — which triggers App Links
+   * verification and opens the app if verified.
+   * S.browser_fallback_url sends to the Play Store if app is not installed.
+   */
+  function buildAppLinkIntentURI(storeUrl) {
+    var currentUrl = window.location.href;
+    return 'intent://' + currentUrl.replace(/^https?:\/\//, '')
+      + '#Intent'
+      + ';scheme=https'
+      + ';action=android.intent.action.VIEW'
+      + ';category=android.intent.category.BROWSABLE'
+      + ';package=' + CONFIG.androidPkg
+      + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
+      + ';end';
+  }
+
   /* ─── Visibility cancel helper ────────────────────────────── */
   function onAppOpened(cb) {
     function onVis() {
@@ -109,12 +128,12 @@
   /* ─── Open strategies ─────────────────────────────────────── */
 
   /*
-   * Native browser open (Safari, Chrome, non-IAB).
-   * Fires ecoatm:// scheme — if app is installed it opens.
-   * If not, visibilitychange never fires and the timeout
-   * sends the user to the store after 2.5s.
+   * Native browser (Chrome, Safari, Samsung Internet):
+   * Use ecoatm:// custom URI scheme.
+   * App installed  → opens immediately.
+   * App missing    → visibilitychange never fires → timeout → store.
    */
-  function openApp(appUri, storeUrl) {
+  function openAppViaScheme(appUri, storeUrl) {
     var done  = false;
 
     var timer = setTimeout(function () {
@@ -133,17 +152,19 @@
   }
 
   /*
-   * IAB open (Facebook, TikTok, Twitter, etc. on Android).
-   * These WebViews block ecoatm:// AND freeze setTimeout after
-   * a blocked navigation — so openApp() hangs forever.
+   * Android IAB (Facebook, TikTok, Twitter, etc.):
+   * Use intent:// with scheme=https to trigger App Links from within
+   * the WebView. The OS intercepts the intent, checks assetlinks.json
+   * verification, and:
+   *   app installed + verified  → opens app to correct screen
+   *   app not installed         → follows S.browser_fallback_url → Play Store
    *
-   * Solution: skip the scheme attempt entirely.
-   * Go straight to the store via a plain https:// navigation,
-   * which always works in any WebView (same as tapping the
-   * Google Play badge on the index page).
+   * This works because intent:// with scheme=https is an HTTPS navigation
+   * routed through Android's Intent system — it bypasses the WebView's
+   * custom scheme block while still triggering App Links.
    */
-  function openStore(storeUrl) {
-    window.location.href = storeUrl;
+  function openAppViaAppLink(storeUrl) {
+    window.location.href = buildAppLinkIntentURI(storeUrl);
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
@@ -156,33 +177,32 @@
     /* No deep link params — plain homepage visit, do nothing */
     if (!screen && !hasPath) return;
 
-    var platform = getPlatform();
+    var platform       = getPlatform();
     var resolvedScreen = getScreen(params);
-    var appUri   = buildAppURI(resolvedScreen, params);
-    var storeUrl = CONFIG.store[platform] || CONFIG.store.android;
+    var appUri         = buildAppURI(resolvedScreen, params);
+    var storeUrl       = CONFIG.store[platform] || CONFIG.store.android;
 
     /* Desktop — show marketing page as-is */
     if (platform === 'desktop') return;
 
-    /*
-     * Android IAB (Facebook, TikTok, Twitter, LinkedIn, etc.):
-     * ecoatm:// is blocked AND setTimeout freezes after a blocked
-     * navigation. Go straight to the Play Store via https://.
-     *
-     * Android native browser (Chrome, Samsung Internet, etc.):
-     * ecoatm:// works — attempt app open, fallback to store on timeout.
-     */
     if (platform === 'android') {
+      /*
+       * Android IAB — use App Link intent URI (https scheme).
+       * Bypasses the WebView custom scheme block while still
+       * triggering App Links to open the app directly.
+       */
       if (isInAppBrowser()) {
-        openStore(storeUrl);
-      } else {
-        openApp(appUri, storeUrl);
+        openAppViaAppLink(storeUrl);
+        return;
       }
+
+      /* Android native browser — ecoatm:// scheme + timeout fallback */
+      openAppViaScheme(appUri, storeUrl);
       return;
     }
 
-    /* iOS — all browsers use the same ecoatm:// + timeout approach */
-    openApp(appUri, storeUrl);
+    /* iOS — all browsers use ecoatm:// scheme + timeout fallback */
+    openAppViaScheme(appUri, storeUrl);
   }
 
   /* ─── Boot ────────────────────────────────────────────────── */
