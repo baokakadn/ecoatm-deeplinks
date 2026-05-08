@@ -121,8 +121,8 @@
    * We use requestAnimationFrame instead of setTimeout because Facebook IAB
    * freezes JS timers after navigation, but rAF keeps ticking.
    */
-function routeAndroid() {
-  // Native Android browsers: intent:// works fine, OS handles fallback.
+  function routeAndroid() {
+  // Native Android browsers: intent:// works, OS handles fallback.
   if (!isAnyIAB) {
     const appPath = buildAppUriForIntent();
     const fallback = encodeURIComponent(ANDROID_STORE_URL);
@@ -139,42 +139,18 @@ function routeAndroid() {
 
   // Facebook/Instagram/TikTok IAB on Android.
   //
-  // What we know doesn't work in this environment:
-  //   - intent:// top-level navigation → "Page can't be loaded" error.
-  //   - intent:// in an iframe → also fails.
-  //   - ecoatm:// → blocked, AND freezes setTimeout/setInterval.
-  //   - JS-driven fallbacks (timer, rAF) → unreliable due to the freeze
-  //     and because the chooser dialog doesn't always change focus/visibility
-  //     in a way our heuristics can detect.
+  // Every deep-link mechanism is broken in this environment:
+  //   - intent:// (top-level or iframe) → error page or silently fails
+  //   - ecoatm:// custom scheme → blocked, freezes JS thread
+  //   - setTimeout/setInterval/rAF → frozen after blocked navigation
+  //   - meta refresh → doesn't survive the freeze
   //
-  // What DOES work:
-  //   - ecoatm:// reliably opens the app if installed (just freezes JS after).
-  //   - Plain https:// navigation always works.
-  //   - <meta http-equiv="refresh"> is handled by the HTML parser, not the
-  //     JS event loop, so it survives the post-navigation JS freeze.
+  // The only reliable action is plain https:// navigation.
   //
-  // Strategy: inject a meta refresh that points to the Play Store with a
-  // ~2.5s delay, THEN fire ecoatm://. If the app opens, the page is torn
-  // down before the refresh fires. If it doesn't (app not installed), the
-  // browser executes the refresh and lands on the Play Store — no JS needed.
-  //
-  // The chooser dialog case is also handled correctly: if the dialog appears
-  // and the user taps Continue, the app opens before the refresh fires. If
-  // they tap Cancel, they end up on the Play Store, which is acceptable
-  // (and matches what most other deep-link libraries do — once the user is
-  // in the "I tapped a deep link" flow, ending on the store is fine).
-  const appUri = buildAppUri();
-
-  // Inject the meta refresh first so it's queued before the scheme fires.
-  const meta = document.createElement('meta');
-  meta.httpEquiv = 'refresh';
-  meta.content = '3; url=' + ANDROID_STORE_URL;
-  document.head.appendChild(meta);
-
-  // Fire the custom scheme. This will either open the app, show the
-  // chooser dialog, or be silently blocked. In all cases the meta refresh
-  // is the safety net.
-  window.location.href = appUri;
+  // This is the same approach Branch, AppsFlyer, and Firebase Dynamic
+  // Links use for Facebook IAB. If the app is installed, the Play Store
+  // shows an "Open" button. If not, it shows "Install".
+  window.location.href = ANDROID_STORE_URL;
 }
 
   /**
