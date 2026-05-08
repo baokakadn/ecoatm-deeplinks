@@ -96,13 +96,16 @@
       if (!document.hidden) return;
       cleanup(); cb();
     }
-    function onHide() { cleanup(); cb(); }
+    function onHide()  { cleanup(); cb(); }
+    function onBlur()  { cleanup(); cb(); } // fires when OS dialog steals focus
     function cleanup() {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('blur', onBlur);
     }
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onHide);
+    window.addEventListener('blur', onBlur);
   }
 
   /* ─── Single open strategy for all browsers and IABs ─────── */
@@ -129,6 +132,13 @@
       done = true;
       window.location.href = storeUrl;
     }, CONFIG.timeout);
+
+    /* Dialog appeared — cancel the timer entirely.
+       User is in control: Continue opens the app, Go Back stays in IAB. */
+    window.addEventListener('blur', function onBlur() {
+      window.removeEventListener('blur', onBlur);
+      clearTimeout(timer);
+    });
 
     onAppOpened(function () {
       if (done) return;
