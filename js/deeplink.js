@@ -95,15 +95,6 @@
     return CONFIG.scheme + path + (qsStr ? '?' + qsStr : '');
   }
 
-  function buildIntentURI(appUri, storeUrl) {
-    return 'intent://' + appUri.replace(CONFIG.scheme, '')
-      + '#Intent'
-      + ';scheme=ecoatm'
-      + ';package=' + CONFIG.androidPkg
-      + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
-      + ';end';
-  }
-
   /* ─── Visibility cancel helper ────────────────────────────── */
   function onAppOpened(cb) {
     function onVis() {
@@ -122,18 +113,21 @@
   /* ─── Open strategies ─────────────────────────────────────── */
 
   /*
-   * Android Chrome — Intent URI. The OS resolves natively:
-   *   app installed → opens app
-   *   app missing   → follows S.browser_fallback_url to Play Store
+   * Android:
+   * First attempt the ecoatm:// custom URI scheme directly.
+   * If the app is installed it opens immediately via the manifest
+   * intent filter — regardless of whether App Links are verified.
+   * If the app is NOT installed, nothing happens and the timeout
+   * fires, sending the user to the Play Store.
    *
-   * iOS — direct scheme with visibilitychange + timeout fallback.
+   * We deliberately avoid Intent URI here because Intent URI with
+   * S.browser_fallback_url skips the app and goes straight to the
+   * store when App Links are not verified — even if the app is installed.
+   *
+   * iOS:
+   * Direct ecoatm:// scheme with visibilitychange + timeout fallback.
    */
   function openApp(appUri, storeUrl) {
-    if (getPlatform() === 'android') {
-      window.location.href = buildIntentURI(appUri, storeUrl);
-      return;
-    }
-
     var done  = false;
     var timer = setTimeout(function () {
       if (done) return;
@@ -170,14 +164,23 @@
     if (platform === 'desktop') return;
 
     /*
-     * Facebook IAB (Android) and other blocking WebViews:
-     * All JS navigation is blocked including window.location, intent://,
-     * ecoatm://, and iframes. setTimeout can also freeze after a blocked
-     * navigation attempt. There is no JS workaround — do nothing and let
-     * the marketing page render. The user can tap the App Store / Play
-     * Store badges on the page to get the app.
+     * Facebook IAB (Android):
+     * Blocks ecoatm:// and intent:// but allows normal https:// navigation.
+     * Skip the app attempt — go directly to the Play Store.
      */
-    if (isInAppBrowser() && !isInstagram() && platform === 'android') return;
+    if (isFacebook() && platform === 'android') {
+      window.location.href = storeUrl;
+      return;
+    }
+
+    /*
+     * Other blocking Android IABs (TikTok, Twitter, LinkedIn, etc.):
+     * Same behaviour as Facebook — go directly to the store.
+     */
+    if (isInAppBrowser() && !isInstagram() && platform === 'android') {
+      window.location.href = storeUrl;
+      return;
+    }
 
     /* Instagram IAB (Android) — Chrome Custom Tab, intent:// works */
     /* Native Safari, Chrome, and all iOS browsers */
