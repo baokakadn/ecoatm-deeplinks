@@ -48,8 +48,9 @@
     ],
 
     ua: {
-      ios:     /iPhone|iPad|iPod/i,
-      android: /Android/i
+      ios:          /iPhone|iPad|iPod/i,
+      android:      /Android/i,
+      inAppBrowser: /FBAN|FBAV|Instagram|Twitter|LinkedInApp|TikTok|BytedanceWebview/i
     }
   };
 
@@ -57,6 +58,7 @@
   var UA = navigator.userAgent || '';
 
   function getPlatform()    { return CONFIG.ua.ios.test(UA) ? 'ios' : CONFIG.ua.android.test(UA) ? 'android' : 'desktop'; }
+  function isInAppBrowser() { return CONFIG.ua.inAppBrowser.test(UA); }
 
   /* ─── URL helpers ─────────────────────────────────────────── */
   function getParams() { return new URLSearchParams(window.location.search); }
@@ -107,22 +109,14 @@
   /* ─── Open strategies ─────────────────────────────────────── */
 
   /*
-   * Android:
-   * First attempt the ecoatm:// custom URI scheme directly.
-   * If the app is installed it opens immediately via the manifest
-   * intent filter — regardless of whether App Links are verified.
-   * If the app is NOT installed, nothing happens and the timeout
-   * fires, sending the user to the Play Store.
-   *
-   * We deliberately avoid Intent URI here because Intent URI with
-   * S.browser_fallback_url skips the app and goes straight to the
-   * store when App Links are not verified — even if the app is installed.
-   *
-   * iOS:
-   * Direct ecoatm:// scheme with visibilitychange + timeout fallback.
+   * Native browser open (Safari, Chrome, non-IAB).
+   * Fires ecoatm:// scheme — if app is installed it opens.
+   * If not, visibilitychange never fires and the timeout
+   * sends the user to the store after 2.5s.
    */
   function openApp(appUri, storeUrl) {
     var done  = false;
+
     var timer = setTimeout(function () {
       if (done) return;
       done = true;
@@ -138,15 +132,28 @@
     window.location.href = appUri;
   }
 
+  /*
+   * IAB open (Facebook, TikTok, Twitter, etc. on Android).
+   * These WebViews block ecoatm:// AND freeze setTimeout after
+   * a blocked navigation — so openApp() hangs forever.
+   *
+   * Solution: skip the scheme attempt entirely.
+   * Go straight to the store via a plain https:// navigation,
+   * which always works in any WebView (same as tapping the
+   * Google Play badge on the index page).
+   */
+  function openStore(storeUrl) {
+    window.location.href = storeUrl;
+  }
+
   /* ─── Main router ─────────────────────────────────────────── */
   function route() {
-    /* Only run when a deep link param is present.
-       Plain visits to the homepage should show the marketing page as-is. */
     var params  = getParams();
     var screen  = params.get('screen');
     var hasPath = window.location.pathname !== '/'
                   && window.location.pathname !== '/index.html';
 
+    /* No deep link params — plain homepage visit, do nothing */
     if (!screen && !hasPath) return;
 
     var platform = getPlatform();
@@ -154,30 +161,27 @@
     var appUri   = buildAppURI(resolvedScreen, params);
     var storeUrl = CONFIG.store[platform] || CONFIG.store.android;
 
-    /* Desktop — do nothing, let the marketing page render */
+    /* Desktop — show marketing page as-is */
     if (platform === 'desktop') return;
 
     /*
-     * Facebook IAB (Android):
-     * Blocks ecoatm:// and intent:// but allows normal https:// navigation.
-     * Skip the app attempt — go directly to the Play Store.
+     * Android IAB (Facebook, TikTok, Twitter, LinkedIn, etc.):
+     * ecoatm:// is blocked AND setTimeout freezes after a blocked
+     * navigation. Go straight to the Play Store via https://.
+     *
+     * Android native browser (Chrome, Samsung Internet, etc.):
+     * ecoatm:// works — attempt app open, fallback to store on timeout.
      */
-    if (isFacebook() && platform === 'android') {
-      window.location.href = storeUrl;
+    if (platform === 'android') {
+      if (isInAppBrowser()) {
+        openStore(storeUrl);
+      } else {
+        openApp(appUri, storeUrl);
+      }
       return;
     }
 
-    /*
-     * Other blocking Android IABs (TikTok, Twitter, LinkedIn, etc.):
-     * Same behaviour as Facebook — go directly to the store.
-     */
-    if (isInAppBrowser() && !isInstagram() && platform === 'android') {
-      window.location.href = storeUrl;
-      return;
-    }
-
-    /* Instagram IAB (Android) — Chrome Custom Tab, intent:// works */
-    /* Native Safari, Chrome, and all iOS browsers */
+    /* iOS — all browsers use the same ecoatm:// + timeout approach */
     openApp(appUri, storeUrl);
   }
 
