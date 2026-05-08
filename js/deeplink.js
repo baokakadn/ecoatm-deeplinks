@@ -126,10 +126,9 @@
   /* ─── Open strategies ─────────────────────────────────────── */
 
   /*
-   * Native browser (Chrome, Safari, Samsung Internet):
-   * Use ecoatm:// custom URI scheme.
+   * Native browser — ecoatm:// custom URI scheme.
    * App installed  → opens immediately.
-   * App missing    → visibilitychange never fires → timeout → store.
+   * App missing    → timeout fires → store.
    */
   function openAppViaScheme(appUri, storeUrl) {
     var done  = false;
@@ -150,19 +149,33 @@
   }
 
   /*
-   * Android IAB (Facebook, TikTok, Twitter, etc.):
-   * Use intent:// with scheme=https to trigger App Links from within
-   * the WebView. The OS intercepts the intent, checks assetlinks.json
-   * verification, and:
-   *   app installed + verified  → opens app to correct screen
-   *   app not installed         → follows S.browser_fallback_url → Play Store
+   * Android IAB — two-step approach:
    *
-   * This works because intent:// with scheme=https is an HTTPS navigation
-   * routed through Android's Intent system — it bypasses the WebView's
-   * custom scheme block while still triggering App Links.
+   * Step 1: Fire the App Link intent URI (scheme=https).
+   *   App installed + App Links verified → OS opens app directly. Done.
+   *   App NOT installed → intent fails silently in the WebView.
+   *
+   * Step 2: After a short delay, if the page is still visible
+   *   (app did NOT open), navigate to the store via plain https://.
+   *   This works exactly like tapping the Google Play badge on the
+   *   index page — the Play Store app opens natively.
    */
   function openAppViaAppLink(storeUrl) {
+    var appOpened = false;
+
+    /* If the app opens, page goes hidden — record it */
+    onAppOpened(function () { appOpened = true; });
+
+    /* Fire the App Link intent */
     window.location.href = buildAppLinkIntentURI(storeUrl);
+
+    /* After timeout, if page is still visible the app didn't open —
+       navigate to Play Store via plain https:// (never blocked) */
+    setTimeout(function () {
+      if (!appOpened && !document.hidden) {
+        window.location.href = storeUrl;
+      }
+    }, CONFIG.timeout);
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
