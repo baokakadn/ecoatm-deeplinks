@@ -122,70 +122,89 @@
    * freezes JS timers after navigation, but rAF keeps ticking.
    */
   function routeAndroid() {
-    const appPath = buildAppUriForIntent();
-    const fallback = encodeURIComponent(ANDROID_STORE_URL);
+  const appPath = buildAppUriForIntent();
+  const fallback = encodeURIComponent(ANDROID_STORE_URL);
 
-    const intentUrl =
-      `intent://${appPath}` +
-      `#Intent;` +
-      `scheme=${APP_SCHEME};` +
-      `package=${ANDROID_PACKAGE};` +
-      `S.browser_fallback_url=${fallback};` +
-      `end`;
+  const intentUrl =
+    `intent://${appPath}` +
+    `#Intent;` +
+    `scheme=${APP_SCHEME};` +
+    `package=${ANDROID_PACKAGE};` +
+    `S.browser_fallback_url=${fallback};` +
+    `end`;
 
-    // Native Android browsers handle intent:// correctly on their own.
-    if (!isAnyIAB) {
-      window.location.href = intentUrl;
+  // Native Android browsers handle intent:// correctly with top-level navigation.
+  if (!isAnyIAB) {
+    window.location.href = intentUrl;
+    return;
+  }
+
+  // Facebook/Instagram/TikTok IAB on Android.
+  //
+  // We CANNOT use top-level navigation (window.location.href = intentUrl)
+  // here. If the app isn't installed, the IAB navigates to the intent URL
+  // itself, fails to resolve it, and shows "Page can't be loaded". That
+  // also wipes out our JS, so the rAF fallback never fires.
+  //
+  // Instead, fire the intent via a hidden iframe. If the OS resolves it
+  // (app installed), the app opens or the chooser dialog appears. If the
+  // OS can't resolve it (app not installed), the iframe silently fails
+  // and the main page stays intact, letting our rAF loop redirect to the
+  // Play Store cleanly.
+  let cancelled = false;
+  const startedAt = Date.now();
+
+  function cancel() { cancelled = true; }
+
+  document.addEventListener('visibilitychange', function () {
+    if (isPageHidden()) cancel();
+  });
+  window.addEventListener('pagehide', cancel);
+  window.addEventListener('blur', cancel);
+
+  function tick() {
+    if (cancelled) return;
+
+    // OS chooser dialog appeared → focus left the WebView → user is deciding.
+    if (document.hasFocus && !document.hasFocus()) {
+      cancel();
+      return;
+    }
+    if (isPageHidden()) {
+      cancel();
       return;
     }
 
-    // Facebook/Instagram/TikTok IAB on Android.
-    let cancelled = false;
-    const startedAt = Date.now();
-
-    function cancel() {
-      cancelled = true;
-    }
-
-    // Any of these signals mean either the app is opening or the OS is
-    // showing the intent chooser dialog. In both cases, do not redirect.
-    document.addEventListener('visibilitychange', function () {
-      if (isPageHidden()) cancel();
-    });
-    window.addEventListener('pagehide', cancel);
-    window.addEventListener('blur', cancel);
-
-    function tick() {
-      if (cancelled) return;
-
-      // Defensive: if focus was lost between rAF frames without firing blur
-      // (rare but seen on some Android WebView builds), treat as cancelled.
-      if (document.hasFocus && !document.hasFocus()) {
-        cancel();
-        return;
-      }
-      if (isPageHidden()) {
-        cancel();
-        return;
-      }
-
-      const elapsed = Date.now() - startedAt;
-      if (elapsed >= FALLBACK_TIMEOUT_MS) {
-        // Page never lost focus, never went hidden, no dialog ever appeared.
-        // Intent was silently swallowed → app is not installed → go to store.
-        window.location.href = ANDROID_STORE_URL;
-        return;
-      }
-      requestAnimationFrame(tick);
+    const elapsed = Date.now() - startedAt;
+    if (elapsed >= FALLBACK_TIMEOUT_MS) {
+      // Never lost focus, never went hidden — app isn't installed.
+      // Top-level navigation to the Play Store https URL works in IAB.
+      window.location.href = ANDROID_STORE_URL;
+      return;
     }
     requestAnimationFrame(tick);
-
-    // Fire the intent. From here, one of three things happens:
-    //   - App opens directly → page hides → cancel.
-    //   - Dialog appears → focus lost → blur → cancel.
-    //   - Nothing happens → tick() eventually times out → store.
-    window.location.href = intentUrl;
   }
+  requestAnimationFrame(tick);
+
+  // Fire the intent via hidden iframe so a failure doesn't break the page.
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'display:none;width:0;height:0;border:0;';
+  iframe.src = intentUrl;
+  document.body.appendChild(iframe);
+
+  // Clean up the iframe after a moment — it's served its purpose.
+  // Use rAF to schedule cleanup since setTimeout may be frozen.
+  let cleanupFrames = 0;
+  function cleanupTick() {
+    cleanupFrames++;
+    if (cleanupFrames > 30) {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      return;
+    }
+    requestAnimationFrame(cleanupTick);
+  }
+  requestAnimationFrame(cleanupTick);
+}
 
   /**
    * iOS strategy for normal browsers (Safari, Chrome, etc).
