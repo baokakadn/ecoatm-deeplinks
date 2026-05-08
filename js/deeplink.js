@@ -121,89 +121,60 @@
    * We use requestAnimationFrame instead of setTimeout because Facebook IAB
    * freezes JS timers after navigation, but rAF keeps ticking.
    */
-  function routeAndroid() {
-  const appPath = buildAppUriForIntent();
-  const fallback = encodeURIComponent(ANDROID_STORE_URL);
-
-  const intentUrl =
-    `intent://${appPath}` +
-    `#Intent;` +
-    `scheme=${APP_SCHEME};` +
-    `package=${ANDROID_PACKAGE};` +
-    `S.browser_fallback_url=${fallback};` +
-    `end`;
-
-  // Native Android browsers handle intent:// correctly with top-level navigation.
+function routeAndroid() {
+  // Native Android browsers: intent:// works fine, OS handles fallback.
   if (!isAnyIAB) {
+    const appPath = buildAppUriForIntent();
+    const fallback = encodeURIComponent(ANDROID_STORE_URL);
+    const intentUrl =
+      `intent://${appPath}` +
+      `#Intent;` +
+      `scheme=${APP_SCHEME};` +
+      `package=${ANDROID_PACKAGE};` +
+      `S.browser_fallback_url=${fallback};` +
+      `end`;
     window.location.href = intentUrl;
     return;
   }
 
   // Facebook/Instagram/TikTok IAB on Android.
   //
-  // We CANNOT use top-level navigation (window.location.href = intentUrl)
-  // here. If the app isn't installed, the IAB navigates to the intent URL
-  // itself, fails to resolve it, and shows "Page can't be loaded". That
-  // also wipes out our JS, so the rAF fallback never fires.
+  // What we know doesn't work in this environment:
+  //   - intent:// top-level navigation → "Page can't be loaded" error.
+  //   - intent:// in an iframe → also fails.
+  //   - ecoatm:// → blocked, AND freezes setTimeout/setInterval.
+  //   - JS-driven fallbacks (timer, rAF) → unreliable due to the freeze
+  //     and because the chooser dialog doesn't always change focus/visibility
+  //     in a way our heuristics can detect.
   //
-  // Instead, fire the intent via a hidden iframe. If the OS resolves it
-  // (app installed), the app opens or the chooser dialog appears. If the
-  // OS can't resolve it (app not installed), the iframe silently fails
-  // and the main page stays intact, letting our rAF loop redirect to the
-  // Play Store cleanly.
-  let cancelled = false;
-  const startedAt = Date.now();
+  // What DOES work:
+  //   - ecoatm:// reliably opens the app if installed (just freezes JS after).
+  //   - Plain https:// navigation always works.
+  //   - <meta http-equiv="refresh"> is handled by the HTML parser, not the
+  //     JS event loop, so it survives the post-navigation JS freeze.
+  //
+  // Strategy: inject a meta refresh that points to the Play Store with a
+  // ~2.5s delay, THEN fire ecoatm://. If the app opens, the page is torn
+  // down before the refresh fires. If it doesn't (app not installed), the
+  // browser executes the refresh and lands on the Play Store — no JS needed.
+  //
+  // The chooser dialog case is also handled correctly: if the dialog appears
+  // and the user taps Continue, the app opens before the refresh fires. If
+  // they tap Cancel, they end up on the Play Store, which is acceptable
+  // (and matches what most other deep-link libraries do — once the user is
+  // in the "I tapped a deep link" flow, ending on the store is fine).
+  const appUri = buildAppUri();
 
-  function cancel() { cancelled = true; }
+  // Inject the meta refresh first so it's queued before the scheme fires.
+  const meta = document.createElement('meta');
+  meta.httpEquiv = 'refresh';
+  meta.content = '3; url=' + ANDROID_STORE_URL;
+  document.head.appendChild(meta);
 
-  document.addEventListener('visibilitychange', function () {
-    if (isPageHidden()) cancel();
-  });
-  window.addEventListener('pagehide', cancel);
-  window.addEventListener('blur', cancel);
-
-  function tick() {
-    if (cancelled) return;
-
-    // OS chooser dialog appeared → focus left the WebView → user is deciding.
-    if (document.hasFocus && !document.hasFocus()) {
-      cancel();
-      return;
-    }
-    if (isPageHidden()) {
-      cancel();
-      return;
-    }
-
-    const elapsed = Date.now() - startedAt;
-    if (elapsed >= FALLBACK_TIMEOUT_MS) {
-      // Never lost focus, never went hidden — app isn't installed.
-      // Top-level navigation to the Play Store https URL works in IAB.
-      window.location.href = ANDROID_STORE_URL;
-      return;
-    }
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-
-  // Fire the intent via hidden iframe so a failure doesn't break the page.
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'display:none;width:0;height:0;border:0;';
-  iframe.src = intentUrl;
-  document.body.appendChild(iframe);
-
-  // Clean up the iframe after a moment — it's served its purpose.
-  // Use rAF to schedule cleanup since setTimeout may be frozen.
-  let cleanupFrames = 0;
-  function cleanupTick() {
-    cleanupFrames++;
-    if (cleanupFrames > 30) {
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-      return;
-    }
-    requestAnimationFrame(cleanupTick);
-  }
-  requestAnimationFrame(cleanupTick);
+  // Fire the custom scheme. This will either open the app, show the
+  // chooser dialog, or be silently blocked. In all cases the meta refresh
+  // is the safety net.
+  window.location.href = appUri;
 }
 
   /**
