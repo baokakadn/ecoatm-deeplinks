@@ -97,14 +97,13 @@
    * verification and opens the app if verified.
    * S.browser_fallback_url sends to the Play Store if app is not installed.
    */
-  function buildAppLinkIntentURI(storeUrl) {
+  function buildAppLinkIntentURI() {
     var currentUrl = window.location.href;
     return 'intent://' + currentUrl.replace(/^https?:\/\//, '')
       + '#Intent'
       + ';scheme=https'
       + ';action=android.intent.action.VIEW'
       + ';category=android.intent.category.BROWSABLE'
-      + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
       + ';end';
   }
 
@@ -149,33 +148,35 @@
   }
 
   /*
-   * Android IAB — two-step approach:
+   * Android IAB — parallel approach:
    *
-   * Step 1: Fire the App Link intent URI (scheme=https).
-   *   App installed + App Links verified → OS opens app directly. Done.
-   *   App NOT installed → intent fails silently in the WebView.
+   * Fire the App Link intent URI (no package=, no S.browser_fallback_url).
+   * At the same time, start a timer that goes to the store via plain https://.
    *
-   * Step 2: After a short delay, if the page is still visible
-   *   (app did NOT open), navigate to the store via plain https://.
-   *   This works exactly like tapping the Google Play badge on the
-   *   index page — the Play Store app opens natively.
+   * App installed + verified → OS opens app → page goes hidden
+   *                          → timer cancelled ✅
+   *
+   * App NOT installed       → intent fires but nothing opens
+   *                          → page stays visible
+   *                          → timer fires → window.location.href = storeUrl
+   *                          → Play Store app opens directly ✅
+   *                          (same mechanism as tapping the badge on index page)
    */
   function openAppViaAppLink(storeUrl) {
     var appOpened = false;
 
-    /* If the app opens, page goes hidden — record it */
     onAppOpened(function () { appOpened = true; });
 
-    /* Fire the App Link intent */
-    window.location.href = buildAppLinkIntentURI(storeUrl);
-
-    /* After timeout, if page is still visible the app didn't open —
-       navigate to Play Store via plain https:// (never blocked) */
-    setTimeout(function () {
+    var timer = setTimeout(function () {
       if (!appOpened && !document.hidden) {
         window.location.href = storeUrl;
       }
     }, CONFIG.timeout);
+
+    /* Fire intent — no fallback URL inside the intent itself.
+       The JS timer above is the fallback — it's more reliable because
+       it uses plain https:// navigation which always works in any WebView. */
+    window.location.href = buildAppLinkIntentURI();
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
