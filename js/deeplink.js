@@ -125,28 +125,49 @@
    * external browser, no intent URI, no "Page can't be loaded".
    */
   function openApp(appUri, storeUrl) {
-    var done = false;
+    var done        = false;
+    var dialogShown = false;
 
-    var timer = setTimeout(function () {
-      if (done) return;
-      done = true;
-      window.location.href = storeUrl;
-    }, CONFIG.timeout);
+    /* Track if dialog appeared via any available signal */
+    function onDialogAppear() {
+      dialogShown = true;
+    }
 
-    /* Dialog appeared — cancel the timer entirely.
-       User is in control: Continue opens the app, Go Back stays in IAB. */
-    window.addEventListener('blur', function onBlur() {
-      window.removeEventListener('blur', onBlur);
-      clearTimeout(timer);
-    });
+    window.addEventListener('blur',               onDialogAppear);
+    document.addEventListener('visibilitychange', onDialogAppear);
+    window.addEventListener('pagehide',           onDialogAppear);
 
-    onAppOpened(function () {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-    });
+    function cleanup() {
+      window.removeEventListener('blur',               onDialogAppear);
+      document.removeEventListener('visibilitychange', onDialogAppear);
+      window.removeEventListener('pagehide',           onDialogAppear);
+    }
 
+    /* Fire the scheme */
     window.location.href = appUri;
+
+    /*
+     * Poll every 200ms whether to redirect to store.
+     * Only redirect if:
+     *   - No dialog appeared (dialogShown is still false) AND
+     *   - Enough time has passed (CONFIG.timeout)
+     * If a dialog appeared, stop polling — user is in control.
+     */
+    var elapsed  = 0;
+    var interval = setInterval(function () {
+      if (done) { clearInterval(interval); cleanup(); return; }
+
+      /* Dialog appeared — stop polling, let user decide */
+      if (dialogShown) { clearInterval(interval); cleanup(); return; }
+
+      elapsed += 200;
+      if (elapsed >= CONFIG.timeout) {
+        clearInterval(interval);
+        cleanup();
+        done = true;
+        window.location.href = storeUrl;
+      }
+    }, 200);
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
