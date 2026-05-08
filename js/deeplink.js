@@ -1,22 +1,3 @@
-/**
- * ecoATM Deep Link Router
- * Handles routing from web links to the native app, with Play Store / App Store fallback.
- *
- * Key challenge: Facebook In-App Browser (IAB) blocks ecoatm:// custom scheme AND
- * freezes the JS thread after a blocked navigation, so setTimeout/setInterval stop firing.
- *
- * Solution by platform:
- *   - Android (any browser, including Facebook IAB): use intent:// URLs.
- *     The OS itself handles app-installed detection and falls back to Play Store
- *     via S.browser_fallback_url — no JS timer needed.
- *   - iOS Safari/Chrome: ecoatm:// + 2.5s timer fallback to App Store.
- *   - iOS Facebook IAB: ecoatm:// is blocked and timers freeze.
- *     Universal Links (the https://links.ecoatm.com/... URL itself) should open
- *     the app on the *initial tap* from the Facebook feed. Once we're inside
- *     the IAB the app isn't installed (or UL didn't fire), so we go to the App Store.
- *   - Desktop: do nothing, show marketing page.
- */
-
 (function () {
   'use strict';
 
@@ -95,31 +76,6 @@
 
   /**
    * Android strategy.
-   *
-   * Native Chrome/Samsung browser: intent:// URL is enough — the OS handles
-   * both "app installed → open" and "not installed → Play Store" via
-   * S.browser_fallback_url. No JS fallback needed.
-   *
-   * Facebook/Instagram IAB on Android: more complicated. Three scenarios:
-   *
-   *   1. App installed, no chooser dialog: OS opens app → page goes hidden →
-   *      visibilitychange/pagehide/blur fire → we cancel.
-   *
-   *   2. App installed, OS shows "Open with ecoATM? [Cancel][Continue]" dialog:
-   *      WebView loses focus while dialog is up → blur fires → we cancel.
-   *      We must NOT redirect to the store here — the user has been offered
-   *      a choice, and either outcome (open app or cancel) is intentional.
-   *
-   *   3. App not installed and IAB silently swallows the intent:
-   *      No dialog, no focus change, no visibility change. The page just sits.
-   *      After our timeout we redirect to Play Store as the fallback.
-   *
-   * The discriminator between scenarios 2 and 3 is whether `blur` ever fired.
-   * Once blur fires we permanently cancel — even if the user later cancels
-   * the dialog, redirecting them to the store would be hostile.
-   *
-   * We use requestAnimationFrame instead of setTimeout because Facebook IAB
-   * freezes JS timers after navigation, but rAF keeps ticking.
    */
  function routeAndroid() {
   if (!isAnyIAB) {
@@ -143,7 +99,7 @@
   // both cases: app installed → intent opens it, not installed → Play Store.
   var currentUrl = window.location.href;
 
-  // Method 1: intent to open URL in the default browser
+  // Intent to open URL in the default browser
   var browserIntent =
     'intent://' + currentUrl.replace(/https?:\/\//, '') +
     '#Intent;scheme=https;action=android.intent.action.VIEW;end';
