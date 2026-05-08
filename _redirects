@@ -1,35 +1,31 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Netlify _redirects
-# All rewrites use 200 (rewrite, URL stays clean).
-# :splat captures the full query string automatically on Netlify.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Channel entry points
-# The  query string is preserved automatically by Netlify on 200 rewrites
-# as long as no explicit query params are added to the target.
-/email    /redirect.html  200
-/sms      /redirect.html  200
-/push     /redirect.html  200
-/social   /redirect.html  200
-/qr       /redirect.html  200
+# ── Channel entry points → index.html (200 = rewrite, URL stays clean)
+/email    /index.html  200
+/sms      /index.html  200
+/push     /index.html  200
+/social   /index.html  200
+/qr       /index.html  200
 
-# ── Short-link aliases (SMS)
-/s/:code  /redirect.html?ref=:code  200
+# ── Short-link aliases (SMS brevity)
+/s/:code  /index.html?ref=:code  200
 
 # ── Named screen shortcuts
-/find-kiosk             /redirect.html?screen=find-kiosk  200
-/find-kiosk/:id         /redirect.html?screen=find-kiosk&kiosk_id=:id  200
-/sell                   /redirect.html?screen=sell  200
-/sell/this-device       /redirect.html?screen=sell&sub-screen=this-device  200
-/offers                 /redirect.html?screen=offers  200
-/offers/:id             /redirect.html?screen=offers&offer_id=:id  200
-/account                /redirect.html?screen=account  200
-/home                   /redirect.html?screen=home  200
-/price-view/:id         /redirect.html?screen=price-view&estimate_id=:id  200
+/find-kiosk             /index.html?screen=find-kiosk  200
+/find-kiosk/:id         /index.html?screen=find-kiosk&kiosk_id=:id  200
+/sell                   /index.html?screen=sell  200
+/sell/this-device       /index.html?screen=sell&sub-screen=this-device  200
+/offers                 /index.html?screen=offers  200
+/offers/:id             /index.html?screen=offers&offer_id=:id  200
+/account                /index.html?screen=account  200
+/home                   /index.html?screen=home  200
+/price-view/:id         /index.html?screen=price-view&estimate_id=:id  200
 
 # ── Well-known files — must be direct 200, never redirected
 /.well-known/apple-app-site-association  /.well-known/apple-app-site-association  200
 /.well-known/assetlinks.json             /.well-known/assetlinks.json              200
 
-# ── Catch-all → marketing homepage
+# ── Catch-all → index
 /*  /index.html  200

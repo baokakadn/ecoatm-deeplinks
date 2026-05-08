@@ -3,16 +3,15 @@
 
   /* ─── Config ─────────────────────────────────────────────── */
   var CONFIG = {
-    scheme: 'ecoatm://',
+    scheme:     'ecoatm://',
     androidPkg: 'com.ecoatm.ecoapp.android_qa',
-    timeout: 2500,
+    timeout:    2500,
 
     store: {
       ios:     'https://apps.apple.com/us/app/ecoatm/id944835823',
       android: 'https://play.google.com/store/apps/details?id=com.ecoatm.ecoapp.android'
     },
 
-    /* Maps ?screen= value → desktop web fallback URL */
     webFallback: {
       'home':       'https://www.ecoatm.com',
       'sell':       'https://www.ecoatm.com/pages/sell',
@@ -23,7 +22,6 @@
       'default':    'https://www.ecoatm.com'
     },
 
-    /* Maps URL path segment → screen name when ?screen= is absent */
     pathToScreen: {
       'email':      'home',
       'sms':        'sell',
@@ -38,79 +36,55 @@
       'default':    'home'
     },
 
-    /* Params that carry a sub-path segment (appended after the screen) */
     screenSubPaths: {
       'offers':     'offer_id',
       'find-kiosk': 'kiosk_id',
       'price-view': 'estimate_id'
     },
 
-    /* Query params forwarded from the web link into the app URI */
     forwardParams: [
       'brand', 'model',
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'
     ],
 
-    /* User-Agent patterns */
     ua: {
-      ios:       /iPhone|iPad|iPod/i,
-      android:   /Android/i,
-      facebook:  /FBAN|FBAV/i,
-      instagram: /Instagram/i,
+      ios:          /iPhone|iPad|iPod/i,
+      android:      /Android/i,
+      facebook:     /FBAN|FBAV/i,
+      instagram:    /Instagram/i,
       inAppBrowser: /FBAN|FBAV|Instagram|Twitter|LinkedInApp|TikTok|BytedanceWebview/i
-    },
-
-    /* IAB "open in browser" banner copy */
-    banner: {
-      title: 'Open in your browser to launch the ecoATM app',
-      body:  'Tap \u22ee at the top right, then choose \u201cOpen in Chrome\u201d or \u201cOpen in system browser\u201d.'
     }
   };
 
   /* ─── Platform detection ──────────────────────────────────── */
   var UA = navigator.userAgent || '';
 
-  function getPlatform() {
-    if (CONFIG.ua.ios.test(UA))     return 'ios';
-    if (CONFIG.ua.android.test(UA)) return 'android';
-    return 'desktop';
-  }
-
-  function isFacebook()  { return CONFIG.ua.facebook.test(UA); }
-  function isInstagram() { return CONFIG.ua.instagram.test(UA); }
+  function getPlatform()    { return CONFIG.ua.ios.test(UA) ? 'ios' : CONFIG.ua.android.test(UA) ? 'android' : 'desktop'; }
+  function isFacebook()     { return CONFIG.ua.facebook.test(UA); }
+  function isInstagram()    { return CONFIG.ua.instagram.test(UA); }
   function isInAppBrowser() { return CONFIG.ua.inAppBrowser.test(UA); }
 
   /* ─── URL helpers ─────────────────────────────────────────── */
-  function getParams() {
-    return new URLSearchParams(window.location.search);
-  }
+  function getParams() { return new URLSearchParams(window.location.search); }
 
   function getScreen(params) {
-    var fromQuery = params.get('screen');
-    if (fromQuery) return fromQuery;
-    var segment = window.location.pathname.replace(/^\//, '').split('/')[0];
-    return CONFIG.pathToScreen[segment] || CONFIG.pathToScreen['default'];
-  }
-
-  function getWebFallback(screen) {
-    return CONFIG.webFallback[screen] || CONFIG.webFallback['default'];
+    var q = params.get('screen');
+    if (q) return q;
+    var seg = window.location.pathname.replace(/^\//, '').split('/')[0];
+    return CONFIG.pathToScreen[seg] || CONFIG.pathToScreen['default'];
   }
 
   function buildAppURI(screen, params) {
     var path = 'screen/' + encodeURIComponent(screen);
 
-    /* Append sub-path segment for screens that need it (e.g. /offers/{id}) */
-    var subPathKey = CONFIG.screenSubPaths[screen];
-    if (subPathKey && params.get(subPathKey)) {
-      path += '/' + encodeURIComponent(params.get(subPathKey));
+    var subKey = CONFIG.screenSubPaths[screen];
+    if (subKey && params.get(subKey)) {
+      path += '/' + encodeURIComponent(params.get(subKey));
     }
-
-    /* Special case: sell/this-device */
     if (screen === 'sell' && params.get('sub-screen') === 'this-device') {
       path += '/this-device';
     }
 
-    /* Forward whitelisted query params */
     var qs = new URLSearchParams();
     CONFIG.forwardParams.forEach(function (k) {
       var v = params.get(k);
@@ -130,74 +104,40 @@
       + ';end';
   }
 
-  /* ─── Loading modal ──────────────────────────────────────── */
-  function hideModal() {
-    var modal = document.getElementById('loading-modal');
-    if (modal) modal.style.display = 'none';
-  }
-
   /* ─── Visibility cancel helper ────────────────────────────── */
-  function onAppOpened(callback) {
+  function onAppOpened(cb) {
     function onVis() {
-      if (document.hidden) {
-        cleanup();
-        callback();
-      }
+      if (!document.hidden) return;
+      cleanup(); cb();
     }
-    function onHide()  { cleanup(); callback(); }
-    function onShow()  { cleanup(); callback(); }
-
+    function onHide() { cleanup(); cb(); }
     function cleanup() {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onHide);
-      window.removeEventListener('pageshow', onShow);
     }
-
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onHide);
-    window.addEventListener('pageshow', onShow, { once: true });
   }
 
-  /* ─── App open strategies ─────────────────────────────────── */
+  /* ─── Open strategies ─────────────────────────────────────── */
 
-  /**
-   * Standard open — intent:// on Android Chrome, direct scheme on iOS.
-   * Falls back to the store after TIMEOUT_MS if the app never opens.
+  /*
+   * Android Chrome — Intent URI. The OS resolves natively:
+   *   app installed → opens app
+   *   app missing   → follows S.browser_fallback_url to Play Store
+   *
+   * iOS — direct scheme with visibilitychange + timeout fallback.
    */
   function openApp(appUri, storeUrl) {
-    var done = false;
+    if (getPlatform() === 'android') {
+      window.location.href = buildIntentURI(appUri, storeUrl);
+      return;
+    }
 
-    var timer = setTimeout(function () {
-      if (!done) { done = true; hideModal(); window.location.href = storeUrl; }
-    }, CONFIG.timeout);
-
-    onAppOpened(function () {
-      if (!done) { done = true; clearTimeout(timer); hideModal(); }
-    });
-
-    var platform = getPlatform();
-    window.location.href = platform === 'ios'
-      ? appUri
-      : buildIntentURI(appUri, storeUrl);
-  }
-
-  /**
-   * Escape Facebook's WebView by navigating to an intent:// URI that
-   * explicitly targets the Android browser package. This forces Facebook
-   * to hand the URL off to Chrome/the system browser, where App Links
-   * and custom URI schemes work normally.
-   *
-   * If the intent escape fails (older Android / no browser installed),
-   * falls back to the Play Store after a short delay.
-   */
-  function escapeFacebookWebView(appUri, storeUrl) {
-    var done = false;
-
-    /* Safety net — if the intent escape doesn't work, go to store */
+    var done  = false;
     var timer = setTimeout(function () {
       if (done) return;
       done = true;
-      hideModal();
       window.location.href = storeUrl;
     }, CONFIG.timeout);
 
@@ -205,70 +145,42 @@
       if (done) return;
       done = true;
       clearTimeout(timer);
-      hideModal();
     });
 
-    /*
-     * Build an intent:// URI that opens the deep link URL in the
-     * system browser (Chrome / default browser), not in a specific app.
-     * The browser will then trigger App Links / Universal Links normally.
-     *
-     * Encode the full HTTPS deep link URL as the intent data so the
-     * browser re-opens the same redirect page outside the Facebook IAB.
-     */
-    var currentUrl = window.location.href;
-    var intentUri  = 'intent://' + currentUrl.replace(/^https?:\/\//, '')
-      + '#Intent'
-      + ';scheme=https'
-      + ';action=android.intent.action.VIEW'
-      + ';category=android.intent.category.BROWSABLE'
-      + ';S.browser_fallback_url=' + encodeURIComponent(storeUrl)
-      + ';end';
-
-    window.location.href = intentUri;
+    window.location.href = appUri;
   }
 
   /* ─── Main router ─────────────────────────────────────────── */
   function route() {
+    /* Only run when a deep link param is present.
+       Plain visits to the homepage should show the marketing page as-is. */
+    var params  = getParams();
+    var screen  = params.get('screen');
+    var hasPath = window.location.pathname !== '/'
+                  && window.location.pathname !== '/index.html';
+
+    if (!screen && !hasPath) return;
+
     var platform = getPlatform();
-    var params   = getParams();
-    var screen   = getScreen(params);
-    var appUri   = buildAppURI(screen, params);
+    var resolvedScreen = getScreen(params);
+    var appUri   = buildAppURI(resolvedScreen, params);
     var storeUrl = CONFIG.store[platform] || CONFIG.store.android;
 
-    /* Desktop → redirect to corresponding web page */
-    if (platform === 'desktop') {
-      hideModal();
-      window.location.replace(getWebFallback(screen));
-      return;
-    }
+    /* Desktop — do nothing, let the marketing page render */
+    if (platform === 'desktop') return;
 
-    /* Facebook IAB (Android) — blocks intent://, try direct scheme.
-       Show "open in browser" banner early so user can act,
-       but still auto-redirect to store after timeout if app never opens. */
-    if (isFacebook() && platform === 'android') {
-      showOpenInBrowserBanner(true);
-      openAppDirectScheme(appUri, storeUrl);
-      return;
-    }
+    /*
+     * Facebook IAB (Android) and other blocking WebViews:
+     * All JS navigation is blocked including window.location, intent://,
+     * ecoatm://, and iframes. setTimeout can also freeze after a blocked
+     * navigation attempt. There is no JS workaround — do nothing and let
+     * the marketing page render. The user can tap the App Store / Play
+     * Store badges on the page to get the app.
+     */
+    if (isInAppBrowser() && !isInstagram() && platform === 'android') return;
 
-    /* Instagram IAB (Android) — uses Chrome Custom Tab; intent:// works */
-    if (isInstagram() && platform === 'android') {
-      openApp(appUri, storeUrl);
-      return;
-    }
-
-    /* Other IABs (TikTok, Twitter, etc.) */
-    if (isInAppBrowser()) {
-      if (platform === 'ios') {
-        openApp(appUri, storeUrl);
-      } else {
-        openAppDirectScheme(appUri, storeUrl);
-      }
-      return;
-    }
-
-    /* Native Safari / Chrome */
+    /* Instagram IAB (Android) — Chrome Custom Tab, intent:// works */
+    /* Native Safari, Chrome, and all iOS browsers */
     openApp(appUri, storeUrl);
   }
 
