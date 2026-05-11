@@ -3,6 +3,16 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
+      "package_name": "com.ecoatm.ecoapp.android",
+      "sha256_cert_fingerprints": [
+        "5D:98:22:54:7C:38:B0:68:BF:B2:60:6F:27:8F:6F:6C:1A:8D:F6:A1:90:D3:CF:FF:06:9A:BB:C8:33:68:A2:F5"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
       "package_name": "com.ecoatm.ecoapp.android_qa",
       "sha256_cert_fingerprints": [
         "ED:1F:71:71:CA:00:E3:72:24:98:90:56:8A:74:E5:23:A9:23:31:63:E9:16:45:3F:34:7A:E7:D2:B6:AC:2A:C6"

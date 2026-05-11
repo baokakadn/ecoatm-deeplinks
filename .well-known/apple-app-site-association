@@ -2,37 +2,33 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["K6J2W4ND2P.com.outerwall.ecoATM2"],
+        "appIDs": ["K6J2W4ND2P.com.outerwall.ecoATM"],
         "components": [
-          {
-            "/": "/redirect*",
-            "comment": "All deep link entry points on this domain"
-          },
-          {
-            "/": "/email*",
-            "comment": "Email channel entry point"
-          },
-          {
-            "/": "/sms*",
-            "comment": "SMS channel entry point"
-          },
-          {
-            "/": "/social*",
-            "comment": "Social media channel entry point"
-          },
-          {
-            "/": "/qr*",
-            "comment": "QR code channel entry point"
-          },
-          {
-            "/": "/s/*",
-            "comment": "Short-link aliases"
-          }
+          { "/": "/redirect*", "comment": "All deep link entry points" },
+          { "/": "/email*", "comment": "Email channel" },
+          { "/": "/sms*", "comment": "SMS channel" },
+          { "/": "/social*", "comment": "Social media channel" },
+          { "/": "/qr*", "comment": "QR code channel" },
+          { "/": "/s/*", "comment": "Short-link aliases" }
+        ]
+      },
+      {
+        "appIDs": ["94Z9V8K9ZZ.com.outerwall.ecoATM2"],
+        "components": [
+          { "/": "/redirect*", "comment": "All deep link entry points" },
+          { "/": "/email*", "comment": "Email channel" },
+          { "/": "/sms*", "comment": "SMS channel" },
+          { "/": "/social*", "comment": "Social media channel" },
+          { "/": "/qr*", "comment": "QR code channel" },
+          { "/": "/s/*", "comment": "Short-link aliases" }
         ]
       }
     ]
   },
   "webcredentials": {
-    "apps": ["K6J2W4ND2P.com.outerwall.ecoATM2"]
+    "apps": [
+      "K6J2W4ND2P.com.outerwall.ecoATM",
+      "94Z9V8K9ZZ.com.outerwall.ecoATM2"
+    ]
   }
 }
