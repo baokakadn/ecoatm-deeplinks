@@ -8,8 +8,7 @@
           { "/": "/email*", "comment": "Email channel" },
           { "/": "/sms*", "comment": "SMS channel" },
           { "/": "/social*", "comment": "Social media channel" },
-          { "/": "/qr*", "comment": "QR code channel" },
-          { "/": "/s/*", "comment": "Short-link aliases" }
+          { "/": "/qr*", "comment": "QR code channel" }
         ]
       },
       {
@@ -19,8 +18,7 @@
           { "/": "/email*", "comment": "Email channel" },
           { "/": "/sms*", "comment": "SMS channel" },
           { "/": "/social*", "comment": "Social media channel" },
-          { "/": "/qr*", "comment": "QR code channel" },
-          { "/": "/s/*", "comment": "Short-link aliases" }
+          { "/": "/qr*", "comment": "QR code channel" }
         ]
       }
     ]

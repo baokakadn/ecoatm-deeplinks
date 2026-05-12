@@ -1,3 +1,30 @@
+/**
+ * ecoATM Deep Link Router
+ * Handles routing from web links to the native app, with Play Store / App Store fallback.
+ *
+ * Web URL format:
+ *   https://ecoatm.com/app/{channel}?screen={screen}&{params}&utm_source=...
+ *
+ * Custom URI scheme format:
+ *   ecoatm://{channel}/{screen}?{params}
+ *
+ * Examples:
+ *   https://ecoatm.com/app/email?screen=offers&offer_id=abc123&utm_source=email&utm_campaign=offer_lock_q2
+ *   → ecoatm://email/offers?offer_id=abc123&utm_source=email&utm_campaign=offer_lock_q2
+ *
+ *   https://ecoatm.com/app/social?screen=find-kiosk&kiosk_id=4521&utm_source=social&utm_medium=cpc
+ *   → ecoatm://social/find-kiosk?kiosk_id=4521&utm_source=social&utm_medium=cpc
+ *
+ *   https://ecoatm.com/app/push?screen=sell&utm_source=push&utm_medium=notification
+ *   → ecoatm://push/sell?utm_source=push&utm_medium=notification
+ *
+ * Platform routing:
+ *   - Android native browser → intent:// with Play Store fallback
+ *   - Android IAB (Facebook, Instagram, etc.) → escape to system browser
+ *   - iOS Safari/Chrome → ecoatm:// with App Store timeout fallback
+ *   - iOS IAB → Universal Links handle it; show App Store banner if not
+ *   - Desktop → no-op, marketing page shown
+ */
 (function () {
   'use strict';
 
@@ -24,46 +51,47 @@
 
   // ---------- URL parsing: web URL -> app URI ----------
   // Web: https://links.ecoatm.com/{channel}?screen={screen}&{params}
-  // App: ecoatm://screen/{screenName}/{subPath}?{params}
+  // App: ecoatm://{channel}/{screen}?{params}
   function buildAppUri() {
-    const params = new URLSearchParams(window.location.search);
-    const screen = params.get('screen') || 'home';
-    const subScreen = params.get('sub-screen');
+  const params = new URLSearchParams(window.location.search);
+  const screen = params.get('screen') || 'home';
 
-    let path = `screen/${screen}`;
-    if (subScreen) path += `/${subScreen}`;
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const channel = pathParts[1] || '';
 
-    // Forward all params except 'screen' and 'sub-screen'
-    const forwarded = new URLSearchParams();
-    params.forEach((value, key) => {
-      if (key !== 'screen' && key !== 'sub-screen') {
-        forwarded.append(key, value);
-      }
-    });
+  const path = channel ? channel + '/' + screen : screen;
 
-    const qs = forwarded.toString();
-    return `${APP_SCHEME}://${path}${qs ? '?' + qs : ''}`;
-  }
+  const forwarded = new URLSearchParams();
+  params.forEach((value, key) => {
+    if (key !== 'screen') {
+      forwarded.append(key, value);
+    }
+  });
+
+  const qs = forwarded.toString();
+  return `${APP_SCHEME}://${path}${qs ? '?' + qs : ''}`;
+}
 
   // For Android intent:// URLs we need just the path + query, no scheme prefix
   function buildAppUriForIntent() {
-    const params = new URLSearchParams(window.location.search);
-    const screen = params.get('screen') || 'home';
-    const subScreen = params.get('sub-screen');
+  const params = new URLSearchParams(window.location.search);
+  const screen = params.get('screen') || 'home';
 
-    let path = `screen/${screen}`;
-    if (subScreen) path += `/${subScreen}`;
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const channel = pathParts[1] || '';
 
-    const forwarded = new URLSearchParams();
-    params.forEach((value, key) => {
-      if (key !== 'screen' && key !== 'sub-screen') {
-        forwarded.append(key, value);
-      }
-    });
+  const path = channel ? channel + '/' + screen : screen;
 
-    const qs = forwarded.toString();
-    return `${path}${qs ? '?' + qs : ''}`;
-  }
+  const forwarded = new URLSearchParams();
+  params.forEach((value, key) => {
+    if (key !== 'screen') {
+      forwarded.append(key, value);
+    }
+  });
+
+  const qs = forwarded.toString();
+  return `${path}${qs ? '?' + qs : ''}`;
+}
 
   // ---------- Visibility helpers ----------
   // If the app opens, the page becomes hidden — we use this to cancel the
