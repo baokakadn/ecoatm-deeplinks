@@ -4,21 +4,13 @@
       {
         "appIDs": ["K6J2W4ND2P.com.outerwall.ecoATM"],
         "components": [
-          { "/": "/redirect*", "comment": "All deep link entry points" },
-          { "/": "/email*", "comment": "Email channel" },
-          { "/": "/sms*", "comment": "SMS channel" },
-          { "/": "/social*", "comment": "Social media channel" },
-          { "/": "/qr*", "comment": "QR code channel" }
+          { "/": "/*", "comment": "All deep link entry points" }
         ]
       },
       {
         "appIDs": ["94Z9V8K9ZZ.com.outerwall.ecoATM2"],
         "components": [
-          { "/": "/redirect*", "comment": "All deep link entry points" },
-          { "/": "/email*", "comment": "Email channel" },
-          { "/": "/sms*", "comment": "SMS channel" },
-          { "/": "/social*", "comment": "Social media channel" },
-          { "/": "/qr*", "comment": "QR code channel" }
+          { "/": "/*", "comment": "All deep link entry points" }
         ]
       }
     ]
